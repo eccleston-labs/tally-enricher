@@ -11,7 +11,7 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
 const get = (obj: unknown, key: string): unknown => (isRecord(obj) ? obj[key] : undefined);
 const asStr = (v: unknown): string => (typeof v === "string" ? v : v == null ? "" : String(v));
 
-// ---------- map body -> { sid, answers } ----------
+// Map body -> { sid, answers }
 function toAnswersFromAny(raw: unknown): { sid: string; answers: Answers } {
   const event = get(raw, "event");
   const root = get(event, "data") ?? get(raw, "data");
@@ -41,6 +41,32 @@ function toAnswersFromAny(raw: unknown): { sid: string; answers: Answers } {
   return { sid, answers };
 }
 
+// Post to Clay with a short await so the call isn't killed when Lambda returns
+async function postToClay(url: string, payload: unknown, timeoutMs = 1500) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "tally-enricher/preview",
+      },
+      body: JSON.stringify(payload),
+      signal: ac.signal,
+    });
+    const text = await res.text();
+    console.log("[Clay] status:", res.status, "bodyLen:", text.length);
+    return { ok: res.ok, status: res.status, bodyLen: text.length };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn("[Clay] failed:", msg);
+    return { ok: false, error: msg };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 export async function POST(req: NextRequest) {
   let body: unknown;
   try {
@@ -58,10 +84,12 @@ export async function POST(req: NextRequest) {
   const enriched = await enrichWithAbstract(answers);
   const decision = scoreLead(enriched);
 
-  // --- Clay webhook (fire-and-forget, with diagnostics) ---
+  // --- Clay webhook (await briefly) ---
   const clayUrl = process.env.CLAY_WEBHOOK_URL;
   const clayWebhookAttempted = Boolean(clayUrl);
   console.log("[Clay] URL present?", clayWebhookAttempted);
+
+  let clayResult: { ok: boolean; status?: number; bodyLen?: number; error?: string } | null = null;
 
   if (clayUrl) {
     const payloadForClay = {
@@ -87,26 +115,8 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), 15000); // give prod more time
-    fetch(clayUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // optional but sometimes handy for vendor logs:
-        "User-Agent": "tally-enricher/preview",
-      },
-      body: JSON.stringify(payloadForClay),
-      signal: ac.signal,
-    })
-      .then(async (res) => {
-        const text = await res.text();
-        console.log("[Clay] status:", res.status, "bodyLen:", text.length);
-      })
-      .catch((err) => {
-        console.warn("[Clay] failed:", err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => clearTimeout(timer));
+    // wait up to ~1.5s so Vercel doesn't freeze the call
+    clayResult = await postToClay(clayUrl, payloadForClay, 1500);
   } else {
     console.warn("[Clay] CLAY_WEBHOOK_URL not set");
   }
@@ -121,6 +131,7 @@ export async function POST(req: NextRequest) {
       debug: enriched.debug ?? null,
     },
     clayWebhookAttempted,
+    clayResult, // helpful while debugging; remove later if you prefer
   });
 }
 
