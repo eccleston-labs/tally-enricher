@@ -56,5 +56,10 @@ export default function DecisionInner() {
   }, [payload]);
 
   // nothing to render — the effect handles redirect
-  return <p className="p-6 text-center">Redirecting…</p>;
+  return (
+    <div className="p-6 flex justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+    </div>
+  );
+  
 }
