@@ -43,6 +43,11 @@ export default function DecisionInner() {
         });
         const j = (await r.json()) as DecisionResp;
         setResp(j);
+
+        if (j.ok && j.decision.approved) {
+          // ✅ redirect straight to Calendly
+          window.location.href = "https://calendly.com/team-assemblygtm/30min";
+        }
       } catch {
         setResp({ ok: false, error: "Network error" });
       } finally {
@@ -52,12 +57,15 @@ export default function DecisionInner() {
   }, [payload]);
 
   if (loading) return <p>Checking company size…</p>;
-  if (resp?.ok) {
-    return resp.decision.approved ? (
-      <h1 className="text-2xl font-bold text-green-600">Yay, big enough 🎉</h1>
-    ) : (
-      <h1 className="text-2xl font-bold text-red-600">Sorry, too small 😔</h1>
-    );
+
+  // If approved, we already redirected above.
+  if (resp?.ok && !resp.decision.approved) {
+    return <h1 className="text-2xl font-bold text-red-600">Sorry, too small 😔</h1>;
   }
-  return <p className="text-red-600">Error: {resp?.error ?? "Unknown"}</p>;
+
+  if (!resp?.ok) {
+    return <p className="text-red-600">Error: {resp?.error ?? "Unknown"}</p>;
+  }
+
+  return null;
 }
