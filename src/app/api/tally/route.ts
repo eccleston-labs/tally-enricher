@@ -5,31 +5,48 @@ import { enrichWithAbstract, scoreLead, Answers } from "@/lib/enrich";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Accepts either Tally webhook payload OR your /decision POST body
-function toAnswersFromAny(raw: unknown): { sid: string; answers: Answers } {
-  const r: any = raw;
+// ---------- tiny helpers (type-safe, no "any") ----------
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
 
-  // Tally webhook event shape
-  const root = r?.event?.data || r?.data;
-  if (root?.fields) {
-    const sid = String(root?.responseId || "");
-    const fields = Array.isArray(root?.fields) ? root.fields : [];
+const get = (obj: unknown, key: string): unknown =>
+  isRecord(obj) ? obj[key] : undefined;
+
+const asStr = (v: unknown): string =>
+  typeof v === "string" ? v : v == null ? "" : String(v);
+
+// ---------- map body -> { sid, answers } ----------
+function toAnswersFromAny(raw: unknown): { sid: string; answers: Answers } {
+  // Try Tally webhook event shape first: { event: { data: { responseId, fields: [...] } } }
+  const event = get(raw, "event");
+  const root = get(event, "data") ?? get(raw, "data");
+
+  const maybeFields = get(root, "fields");
+  if (Array.isArray(maybeFields)) {
+    const sid = asStr(get(root, "responseId"));
     const answers: Record<string, string> = {};
-    for (const f of fields) answers[f.label] = String(f.value ?? "");
+
+    for (const f of maybeFields) {
+      // each f is expected like { label | key | id, value }
+      const label =
+        asStr(get(f, "label")) || asStr(get(f, "key")) || asStr(get(f, "id"));
+      const value = asStr(get(f, "value"));
+      if (label) answers[label] = value;
+    }
     return { sid, answers };
   }
 
-  // Direct POST from /decision (query-param names)
-  const sid = r?.responseId ?? crypto.randomUUID();
+  // Fallback: direct POST from /decision with query-param names
+  const sid = asStr(get(raw, "responseId")) || crypto.randomUUID();
   const answers: Record<string, string> = {
-    "Company Name": r?.company_name ?? "",
-    "Email Address": r?.work_email ?? "",
-    "Company Size": r?.company_size ?? "",
-    "Number of Seats": r?.company_seats ?? "",
-    "Computers": r?.computers ?? "",
-    // keep extras if you want them in Clay later:
-    "Email Calendar": r?.email_calendar ?? "",
-    "Questions": r?.questions ?? "",
+    "Company Name": asStr(get(raw, "company_name")),
+    "Email Address": asStr(get(raw, "work_email")),
+    "Company Size": asStr(get(raw, "company_size")),
+    "Number of Seats": asStr(get(raw, "company_seats")),
+    "Computers": asStr(get(raw, "computers")),
+    // extras (forward to Clay)
+    "Email Calendar": asStr(get(raw, "email_calendar")),
+    "Questions": asStr(get(raw, "questions")),
   };
   return { sid, answers };
 }
@@ -44,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   const { sid, answers } = toAnswersFromAny(body);
 
-  // Basic guard (we need an email to derive domain)
+  // Guard: we need an email to derive domain for Abstract
   if (!answers["Email Address"]) {
     return NextResponse.json({ ok: false, error: "Missing work_email" }, { status: 400 });
   }
@@ -60,20 +77,18 @@ export async function POST(req: NextRequest) {
       id: sid,
       received_at: new Date().toISOString(),
       source: "tally-redirect",
-      // Original inputs (your URL params or mapped fields from Tally)
       inputs: {
         company_name: answers["Company Name"],
         work_email: answers["Email Address"],
         company_size: answers["Company Size"],
         company_seats: answers["Number of Seats"],
         computers: answers["Computers"],
-        email_calendar: (body as any)?.email_calendar ?? "",
-        questions: (body as any)?.questions ?? "",
+        email_calendar: asStr(get(body, "email_calendar")),
+        questions: asStr(get(body, "questions")),
       },
       derived: enriched.derived,
       companyEnrichment: enriched.companyEnrichment ?? null,
       decision,
-      // light request context (useful in Clay)
       request_meta: {
         ip: req.headers.get("x-forwarded-for") ?? null,
         user_agent: req.headers.get("user-agent") ?? null,
@@ -83,13 +98,14 @@ export async function POST(req: NextRequest) {
 
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), 5000);
-    // Do NOT block the response on this; log but don’t throw
     fetch(clayUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payloadForClay),
       signal: ac.signal,
     })
+      // Optional: uncomment to see status in logs
+      // .then(async (res) => console.log("[Clay] status", res.status, (await res.text()).slice(0, 200)))
       .catch(() => {})
       .finally(() => clearTimeout(timer));
   }
