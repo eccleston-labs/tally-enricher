@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type Answers = Record<string, string>;
 
 export type EnrichedResult = {
