@@ -1,7 +1,7 @@
 // app/decision/DecisionInner.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 
 type DecisionResp =
@@ -24,15 +24,13 @@ export default function DecisionInner() {
     };
   }, [sp]);
 
-  const [resp, setResp] = useState<DecisionResp | null>(null);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     if (!payload.work_email) {
-      setResp({ ok: false, error: "Missing work_email in URL" });
-      setLoading(false);
+      // missing email, treat as "too small" → redirect to sales
+      window.location.href = "https://granola.ai/contact/sales/success";
       return;
     }
+
     (async () => {
       try {
         const r = await fetch("/api/tally", {
@@ -42,30 +40,21 @@ export default function DecisionInner() {
           cache: "no-store",
         });
         const j = (await r.json()) as DecisionResp;
-        setResp(j);
 
         if (j.ok && j.decision.approved) {
-          // ✅ redirect straight to Calendly
+          // ✅ big enough
           window.location.href = "https://calendly.com/team-assemblygtm/30min";
+        } else {
+          // ❌ too small / error
+          window.location.href = "https://granola.ai/contact/sales/success";
         }
       } catch {
-        setResp({ ok: false, error: "Network error" });
-      } finally {
-        setLoading(false);
+        // network or API failure → redirect to sales page
+        window.location.href = "https://granola.ai/contact/sales/success";
       }
     })();
   }, [payload]);
 
-  if (loading) return <p>Checking company size…</p>;
-
-  // If approved, we already redirected above.
-  if (resp?.ok && !resp.decision.approved) {
-    return <h1 className="text-2xl font-bold text-red-600">Sorry, too small 😔</h1>;
-  }
-
-  if (!resp?.ok) {
-    return <p className="text-red-600">Error: {resp?.error ?? "Unknown"}</p>;
-  }
-
-  return null;
+  // nothing to render — the effect handles redirect
+  return <p className="p-6 text-center">Redirecting…</p>;
 }
