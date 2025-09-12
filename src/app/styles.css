@@ -31,3 +31,19 @@
         transform: rotate(360deg);
     }
 }
+
+/* Default (light mode) */
+body {
+    background-color: white;
+    color: black;
+    /* optional */
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: black;
+        color: white;
+        /* optional */
+    }
+}
