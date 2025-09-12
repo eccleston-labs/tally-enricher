@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import './styles.css'
 
 type DecisionResp =
   | { ok: true; decision: { approved: boolean; reason?: string } }
@@ -57,8 +58,8 @@ export default function DecisionInner() {
 
   // nothing to render — the effect handles redirect
   return (
-    <div className="p-6 flex justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+    <div className="loader-container">
+      <div className="loader" />
     </div>
   );
   

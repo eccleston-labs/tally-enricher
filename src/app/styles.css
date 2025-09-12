@@ -1,0 +1,33 @@
+/* styles.css */
+
+/* Spinner container — centers loader */
+.loader-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100svh;
+    width: 100vw;
+    /* same as p-6 */
+}
+
+/* Spinner element */
+.loader {
+    height: 2rem;
+    /* same as h-8 */
+    width: 2rem;
+    /* same as w-8 */
+    border-radius: 9999px;
+    /* fully rounded */
+    border: 4px solid #d1d5db;
+    /* gray-300 */
+    border-top-color: #2563eb;
+    /* blue-600 */
+    animation: spin 1s linear infinite;
+}
+
+/* Spin animation */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

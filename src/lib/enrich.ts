@@ -4,8 +4,11 @@
 export type Answers = Record<string, string>;
 
 export interface PDLCompany {
+  // the fields you actually use
   employee_count?: number | null;
   total_funding_raised?: number | string | null;
+
+  // keep open for anything else you might surface later
   [k: string]: unknown;
 }
 
@@ -57,6 +60,13 @@ const normalizeWebsite = (input?: string | null): string | null => {
   }
 };
 
+// tiny type-safe accessors
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+const get = (obj: unknown, key: string): unknown =>
+  isRecord(obj) ? obj[key] : undefined;
+
 // ---------- Enrichment (PDL) ----------
 export async function enrichWithAbstract(answers: Answers): Promise<EnrichedResult> {
   // Kept the exported function name so your imports don’t change.
@@ -69,7 +79,6 @@ export async function enrichWithAbstract(answers: Answers): Promise<EnrichedResu
   const companySize = answers["Company Size"]?.trim() || null;
   const computers = answers["Computers"]?.trim() || null;
 
-  // Prefer an explicit Website field if you add one; else derive from email
   const websiteFromForm = answers["Website"]?.trim() || null;
   const domain = normalizeWebsite(websiteFromForm) || domainFromEmail(email);
   const website = domain ? `https://${domain}` : null;
@@ -92,39 +101,47 @@ export async function enrichWithAbstract(answers: Answers): Promise<EnrichedResu
         "User-Agent": "tally-enricher/preview",
       },
       body: JSON.stringify({
-        website: domain,          // PDL recommends domain for company enrich
-        include_if_matched: true, // per your curl
+        website: domain,
+        include_if_matched: true,
       }),
       signal: ac.signal,
     });
 
-    console.log(res)
-
-    // after: const res = await fetch(...)
-
     const txt = await res.text();
     let body: unknown = txt;
-    try { body = txt ? JSON.parse(txt) : null; } catch { /* ignore */ }
+    try {
+      body = txt ? JSON.parse(txt) : null;
+    } catch {
+      // leave as text
+    }
 
-    // Typical PDL shape: { status: 200, data: {...} }
     if (res.ok) {
-      const data = (body && (body as any).data) || body;
+      // PDL can return either { status, data: {...} } or just {...}
+      const container = isRecord(body) ? body : null;
+      const data = isRecord(get(container, "data")) ? (get(container, "data") as Record<string, unknown>) : (container as Record<string, unknown> | null);
 
-      // assign enrichment
-      out.companyEnrichment = (data ?? null) as PDLCompany | null;
+      // Extract the fields we need, type-safely
+      const employee_count = toNumber(get(data, "employee_count"));
+      const total_funding_raised = toNumber(get(data, "total_funding_raised"));
 
-      // ---- STRUCTURED SERVER LOG (shows in Vercel Functions logs) ----
+      out.companyEnrichment = {
+        employee_count,
+        total_funding_raised,
+      };
+
+      // ---- Structured server log (Vercel Functions) ----
+      const nameVal = get(data, "name");
+      const displayNameVal = get(data, "display_name");
+      const websiteVal = get(data, "website");
+
       const name =
-        (data as any)?.name ??
-        (data as any)?.display_name ??
+        (typeof nameVal === "string" && nameVal) ||
+        (typeof displayNameVal === "string" && displayNameVal) ||
         null;
       const websiteField =
-        (data as any)?.website ??
-        (data as any)?.domain ??
-        out.derived.website ??
+        (typeof websiteVal === "string" && websiteVal) ||
+        out.derived.website ||
         null;
-      const emp = (data as any)?.employee_count ?? null;
-      const funding = (data as any)?.total_funding_raised ?? null;
 
       console.log(
         "[PDL] hit",
@@ -134,15 +151,14 @@ export async function enrichWithAbstract(answers: Answers): Promise<EnrichedResu
             queried_domain: domain,
             name,
             website: websiteField,
-            employee_count: emp,
-            total_funding_raised: funding,
+            employee_count,
+            total_funding_raised,
           },
           null,
           0
         )
       );
     } else {
-      // log failures so you can see them in prod
       console.warn(
         "[PDL] error",
         JSON.stringify(
@@ -154,7 +170,6 @@ export async function enrichWithAbstract(answers: Answers): Promise<EnrichedResu
       out.debug = { pdlError: { status: res.status, body } };
       out.companyEnrichment = null;
     }
-
   } catch (e: unknown) {
     out.debug = { pdlError: e instanceof Error ? e.message : String(e) };
   } finally {
@@ -168,9 +183,10 @@ export async function enrichWithAbstract(answers: Answers): Promise<EnrichedResu
 export function scoreLead(
   enriched: EnrichedResult
 ): { approved: boolean; reason?: string } {
-  const empCount = typeof enriched.companyEnrichment?.employee_count === "number"
-    ? enriched.companyEnrichment.employee_count!
-    : null;
+  const empCount =
+    typeof enriched.companyEnrichment?.employee_count === "number"
+      ? enriched.companyEnrichment.employee_count
+      : null;
 
   const funding = toNumber(enriched.companyEnrichment?.total_funding_raised);
 
@@ -181,7 +197,6 @@ export function scoreLead(
     return { approved: true };
   }
 
-  // Nice rejection reason for debugging/Clay
   const empPart = empCount === null ? "no employee count" : `${empCount} employees`;
   const fundPart = funding === null ? "no funding" : `$${Math.round(funding).toLocaleString()} funding`;
   return { approved: false, reason: `Fails thresholds (${empPart}, ${fundPart})` };
