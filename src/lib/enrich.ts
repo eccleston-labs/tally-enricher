@@ -191,7 +191,7 @@ export function scoreLead(
   const funding = toNumber(enriched.companyEnrichment?.total_funding_raised);
 
   const passByEmployees = empCount !== null && empCount > 400;
-  const passByFunding = funding !== null && funding > 1_000_000_000;
+  const passByFunding = funding !== null && funding > 100_000_000;
 
   if (passByEmployees || passByFunding) {
     return { approved: true };
