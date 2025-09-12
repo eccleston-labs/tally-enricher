@@ -32,18 +32,17 @@
     }
 }
 
+/* IF NEEDED */
 /* Default (light mode) */
-body {
+/* body {
     background-color: white;
     color: black;
-    /* optional */
-}
+} */
 
 /* Dark mode */
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
     body {
         background-color: black;
         color: white;
-        /* optional */
     }
-}
+} */
