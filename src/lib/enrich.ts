@@ -109,6 +109,7 @@ export async function enrichWithAPIs(answers: Answers): Promise<EnrichedResult> 
   console.log("[SERP] starting lookup", domain);
   try {
     const decision = await evaluateWithSerp(domain, {
+      companyName,
       minRevenueUsd: MIN_REVENUE_USD,
       timeoutMs: 9000,
     });
