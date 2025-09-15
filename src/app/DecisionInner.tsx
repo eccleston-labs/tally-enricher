@@ -1,13 +1,20 @@
-// app/decision/DecisionInner.tsx
 "use client";
 
 import { useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import './styles.css'
+import "./styles.css";
 
 type DecisionResp =
   | { ok: true; decision: { approved: boolean; reason?: string } }
   | { ok: false; error: string };
+
+type Campaign = {
+  id: string;
+  approved_redirect_url: string;
+  rejected_redirect_url: string;
+  calendar_link?: string | null;
+  thresholds?: { minEmployees?: number; minFundingUsd?: number; minRevenueUsd?: number };
+};
 
 export default function DecisionInner() {
   const sp = useSearchParams();
@@ -22,45 +29,65 @@ export default function DecisionInner() {
       computers: get("computers"),
       email_calendar: get("email_calendar"),
       questions: get("questions"),
+      id: get("id"), // campaign id (e.g. "resend", "granola")
     };
   }, [sp]);
 
+  const DEFAULTS = {
+    approved: "https://calendly.com/team-assemblygtm/30min",
+    rejected: "https://granola.ai/contact/sales/success",
+  };
+
   useEffect(() => {
-    if (!payload.work_email) {
-      // missing email, treat as "too small" → redirect to sales
-      window.location.href = "https://granola.ai/contact/sales/success";
-      return;
-    }
+    let cancelled = false;
 
     (async () => {
+      // 1) Fetch campaign config (for URLs)
+      let approvedUrl = DEFAULTS.approved;
+      let rejectedUrl = DEFAULTS.rejected;
+
       try {
+        if (payload.id) {
+          const r = await fetch(`/api/campaign-config?id=${encodeURIComponent(payload.id)}`, { cache: "no-store" });
+          if (r.ok) {
+            const j = await r.json();
+            if (j.ok) {
+              approvedUrl = j.campaign.approved_redirect_url || approvedUrl;
+              rejectedUrl = j.campaign.rejected_redirect_url || rejectedUrl;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[cfg] failed:", e);
+      }
+
+      // 2) Always POST to /api (let server decide)
+      try {
+        console.log("[decision] POST /api with", payload); // <-- debug marker
         const r = await fetch("/api", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
           cache: "no-store",
         });
-        const j = (await r.json()) as DecisionResp;
 
-        if (j.ok && j.decision.approved) {
-          // ✅ big enough
-          window.location.href = "https://calendly.com/team-assemblygtm/30min";
-        } else {
-          // ❌ too small / error
-          window.location.href = "https://granola.ai/contact/sales/success";
-        }
-      } catch {
-        // network or API failure → redirect to sales page
-        window.location.href = "https://granola.ai/contact/sales/success";
+        const j = (await r.json()) as DecisionResp;
+        console.log("[decision] resp", j); // <-- debug marker
+
+        const to = j.ok && j.decision.approved ? approvedUrl : rejectedUrl;
+        if (!cancelled) window.location.href = to;
+      } catch (e) {
+        console.error("[decision] POST failed", e);
+        if (!cancelled) window.location.href = rejectedUrl;
       }
     })();
+
+    return () => { cancelled = true; };
   }, [payload]);
 
-  // nothing to render — the effect handles redirect
   return (
     <div className="loader-container">
       <div className="loader" />
     </div>
   );
-  
 }
