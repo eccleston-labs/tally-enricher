@@ -1,6 +1,7 @@
 // src/lib/enrich.ts
 import { fetchPDLByDomain, type PDLCompany } from "./pdl_api";
-import { evaluateWithClaude, type AiDecision } from "./claude_api";
+// import { evaluateWithClaude, type AiDecision } from "./claude_api";
+import { evaluateWithSerp, type AiDecision } from "./serp_api";
 
 // ---------- Types ----------
 export type Answers = Record<string, string>;
@@ -20,6 +21,7 @@ export interface EnrichedResult {
   debug?: {
     pdlError?: { status: number; body: unknown } | string;
     claudeError?: string;
+    serpError?: string;
   };
 }
 
@@ -52,8 +54,11 @@ const normalizeWebsite = (input?: string | null): string | null => {
   }
 };
 
+// Check for revenue criteria
+const MIN_REVENUE_USD = 50_000_000;
+
 // ---------- Orchestrator ----------
-export async function enrichWithAbstract(answers: Answers): Promise<EnrichedResult> {
+export async function enrichWithAPIs(answers: Answers): Promise<EnrichedResult> {
   const email = answers["Email Address"]?.trim();
   const companyName = answers["Company Name"]?.trim();
   const seats = toInt(answers["Number of Seats"]);
@@ -79,65 +84,91 @@ export async function enrichWithAbstract(answers: Answers): Promise<EnrichedResu
     }
   })();
 
-  const claudePromise = (async () => {
-    try {
-      const decision = await evaluateWithClaude(domain);
-      out.aiDecision = decision;
-      console.log(
-        "[Claude] hit",
-        JSON.stringify(
-          { queried_domain: domain, status: decision?.status, reason: decision?.reason },
-          null,
-          0
-        )
-      );
-    } catch (e: unknown) {
-      out.aiDecision = null;
-      out.debug = {
-        ...(out.debug ?? {}),
-        claudeError: e instanceof Error ? e.message : String(e),
-      };
-    }
-  })();
+  // const claudePromise = (async () => {
+  //   try {
+  //     const decision = await evaluateWithClaude(domain);
+  //     out.aiDecision = decision;
+  //     console.log(
+  //       "[Claude] hit",
+  //       JSON.stringify(
+  //         { queried_domain: domain, status: decision?.status, reason: decision?.reason },
+  //         null,
+  //         0
+  //       )
+  //     );
+  //   } catch (e: unknown) {
+  //     out.aiDecision = null;
+  //     out.debug = {
+  //       ...(out.debug ?? {}),
+  //       claudeError: e instanceof Error ? e.message : String(e),
+  //     };
+  //   }
+  // })();
 
-  await Promise.allSettled([pdlPromise, claudePromise]);
+  const serpPromise = (async () => {
+  console.log("[SERP] starting lookup", domain);
+  try {
+    const decision = await evaluateWithSerp(domain, {
+      minRevenueUsd: MIN_REVENUE_USD,
+      timeoutMs: 9000,
+    });
+    out.aiDecision = decision;
+    console.log(
+      "[SERP] done",
+      JSON.stringify(
+        { queried_domain: domain, status: decision?.status, reason: decision?.reason },
+        null,
+        0
+      )
+    );
+  } catch (e: unknown) {
+    out.aiDecision = null;
+    out.debug = { ...(out.debug ?? {}), serpError: e instanceof Error ? e.message : String(e) };
+    console.error("[SERP] error", e);
+  }
+})();
+
+
+  await Promise.allSettled([pdlPromise, serpPromise]);
   return out;
 }
-
-// ---------- Scoring (unchanged) ----------
+// ---------- Scoring (trusts SERP approval) ----------
 function reasonBackedByRevenueOrPress(reason: string): boolean {
-  const hasSource = /\([a-z0-9.-]+\)/i.test(reason); // e.g., "(sec.gov)"
+  const hasSource = /\([a-z0-9.-]+\)/i.test(reason); // e.g., "(sec.gov)" or "(company.com)"
   const mentionsRevenueNumber =
     /\b(revenue|arr)\b/i.test(reason) &&
     (/[\$£€]?\s?\d{1,3}(?:,\d{3})+/.test(reason) || /\b\d+(\.\d+)?\s*(million|billion)\b/i.test(reason));
-  const mentionsPressVolume =
-    /≥\s*\d+\s*reputable articles/i.test(reason) || /\b(past\s+12\s+months)\b/i.test(reason);
-  return hasSource && (mentionsRevenueNumber || mentionsPressVolume);
+  return hasSource && mentionsRevenueNumber;
 }
 
-export function scoreLead(
-  enriched: EnrichedResult
-): { approved: boolean; reason?: string } {
+export function scoreLead(enriched: EnrichedResult): { approved: boolean; reason?: string } {
+  const toNumber = (v: unknown): number | null =>
+    typeof v === "number" && Number.isFinite(v)
+      ? v
+      : typeof v === "string"
+      ? (n => (Number.isFinite(n) ? n : null))(parseFloat(v.replace(/[^\d.]/g, "")))
+      : null;
+
   const empCount =
     typeof enriched.companyEnrichment?.employee_count === "number"
       ? enriched.companyEnrichment.employee_count
       : null;
-
   const funding = toNumber(enriched.companyEnrichment?.total_funding_raised);
 
+  // PDL gates (unchanged)
   const pdlByEmployees = empCount !== null && empCount > 400;
   const pdlByFunding = funding !== null && funding > 100_000_000;
   const pdlApproved = pdlByEmployees || pdlByFunding;
 
+  // SERP: only trust an "approved" with a proper revenue-style reason
   const ai = enriched.aiDecision;
-  const aiApproved =
-    ai?.status === "approved" && ai?.reason && reasonBackedByRevenueOrPress(ai.reason);
+  const serpApproved = ai?.status === "approved" && ai?.reason && reasonBackedByRevenueOrPress(ai.reason);
 
-  if (pdlApproved || aiApproved) return { approved: true };
+  if (pdlApproved || serpApproved) return { approved: true };
 
   const empPart = empCount === null ? "no employee count" : `${empCount} employees`;
   const fundPart = funding === null ? "no funding" : `$${Math.round(funding).toLocaleString()} funding`;
-  const aiPart = ai ? `AI: ${ai.status}${ai.reason ? ` — ${ai.reason}` : ""}` : "AI: no decision";
+  const aiPart = ai ? `SERP: ${ai.status}${ai.reason ? ` — ${ai.reason}` : ""}` : "SERP: no decision";
 
   return { approved: false, reason: `Fails thresholds (${empPart}, ${fundPart}); ${aiPart}` };
 }

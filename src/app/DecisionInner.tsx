@@ -34,7 +34,7 @@ export default function DecisionInner() {
 
     (async () => {
       try {
-        const r = await fetch("/api/tally", {
+        const r = await fetch("/api", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

@@ -1,11 +1,11 @@
-// src/app/api/tally/route.ts
+// app/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { enrichWithAbstract, scoreLead, Answers } from "@/lib/enrich";
+import { enrichWithAPIs, scoreLead, type Answers } from "@/lib/enrich";
+import { postToClay } from "@/lib/post_to_clay";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// ---------- tiny helpers ----------
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 const get = (obj: unknown, key: string): unknown => (isRecord(obj) ? obj[key] : undefined);
@@ -41,32 +41,6 @@ function toAnswersFromAny(raw: unknown): { sid: string; answers: Answers } {
   return { sid, answers };
 }
 
-// Post to Clay with a short await so the call isn't killed when Lambda returns
-async function postToClay(url: string, payload: unknown, timeoutMs = 1500) {
-  const ac = new AbortController();
-  const t = setTimeout(() => ac.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "tally-enricher/preview",
-      },
-      body: JSON.stringify(payload),
-      signal: ac.signal,
-    });
-    const text = await res.text();
-    console.log("[Clay] status:", res.status, "bodyLen:", text.length);
-    return { ok: res.ok, status: res.status, bodyLen: text.length };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn("[Clay] failed:", msg);
-    return { ok: false, error: msg };
-  } finally {
-    clearTimeout(t);
-  }
-}
-
 export async function POST(req: NextRequest) {
   let body: unknown;
   try {
@@ -76,22 +50,25 @@ export async function POST(req: NextRequest) {
   }
 
   const { sid, answers } = toAnswersFromAny(body);
-
   if (!answers["Email Address"]) {
     return NextResponse.json({ ok: false, error: "Missing work_email" }, { status: 400 });
   }
 
-  const enriched = await enrichWithAbstract(answers);
+  const enriched = await enrichWithAPIs(answers);
   const decision = scoreLead(enriched);
 
-  // --- Clay webhook (await briefly) ---
+  // ---- Clay toggle: env OR query (?post_to_clay=true) OR header (x-post-to-clay: 1)
+  const url = new URL(req.url);
+  const clayEnabledEnv = process.env.CLAY_ENABLED === "true";
+  const clayEnabledReq =
+    (url.searchParams.get("post_to_clay") ?? "").toLowerCase() === "true" ||
+    req.headers.get("x-post-to-clay") === "1";
+  const doClay = clayEnabledEnv || clayEnabledReq;
+
   const clayUrl = process.env.CLAY_WEBHOOK_URL;
-  const clayWebhookAttempted = Boolean(clayUrl);
-  console.log("[Clay] URL present?", clayWebhookAttempted);
+  let clayResult: { ok: boolean; status?: number; error?: string } | null = null;
 
-  let clayResult: { ok: boolean; status?: number; bodyLen?: number; error?: string } | null = null;
-
-  if (clayUrl) {
+  if (doClay && clayUrl) {
     const payloadForClay = {
       id: sid,
       received_at: new Date().toISOString(),
@@ -115,10 +92,11 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    // wait up to ~1.5s so Vercel doesn't freeze the call
-    clayResult = await postToClay(clayUrl, payloadForClay, 1500);
+    const res = await postToClay({ payload: payloadForClay, url: clayUrl, timeoutMs: 1500, retries: 1 });
+    clayResult = { ok: res.ok, status: "status" in res ? res.status : undefined, error: !res.ok ? res.error : undefined };
+    console.log("[Clay]", JSON.stringify({ attempted: true, ok: res.ok, status: (res as any).status }, null, 0));
   } else {
-    console.warn("[Clay] CLAY_WEBHOOK_URL not set");
+    console.log("[Clay] skipped", JSON.stringify({ doClay, hasUrl: !!clayUrl }, null, 0));
   }
 
   return NextResponse.json({
@@ -130,11 +108,10 @@ export async function POST(req: NextRequest) {
       companyEnrichment: enriched.companyEnrichment ?? null,
       debug: enriched.debug ?? null,
     },
-    clayWebhookAttempted,
-    clayResult, // helpful while debugging; remove later if you prefer
+    clay: clayResult,
   });
 }
 
 export async function GET() {
-  return NextResponse.json({ ok: true, message: "Tally webhook alive" });
+  return NextResponse.json({ ok: true, message: "Webhook alive" });
 }
