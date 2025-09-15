@@ -106,7 +106,7 @@ export async function enrichWithAPIs(answers: Answers): Promise<EnrichedResult> 
   // })();
 
   const serpPromise = (async () => {
-  console.log("[SERP] starting lookup", domain);
+  console.log("[SERP] starting lookup for", domain, "and", companyName);
   try {
     const decision = await evaluateWithSerp(domain, {
       companyName,
@@ -117,7 +117,7 @@ export async function enrichWithAPIs(answers: Answers): Promise<EnrichedResult> 
     console.log(
       "[SERP] done",
       JSON.stringify(
-        { queried_domain: domain, status: decision?.status, reason: decision?.reason },
+        { queried_domain: domain, queried_company: companyName, status: decision?.status, reason: decision?.reason },
         null,
         0
       )
