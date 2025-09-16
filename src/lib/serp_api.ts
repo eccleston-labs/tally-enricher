@@ -3,11 +3,25 @@ export type AiDecision =
   | { status: "approved" | "rejected" | "unsure"; reason: string }
   | null;
 
-// --- Money parsing (kept) ---
+// Parse the money string
 const MONEY_RE =
   /(?:(USD|US\$|\$|GBP|£|EUR|€)\s*)?(\d{1,3}(?:[,\s]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)(?:\s*(billion|bn|b|million|m))?(?:\s*(USD|US\$|GBP|EUR))?/i;
 
 type ParsedMoney = { value: number; currency?: string | null; unit?: "million" | "billion" | null };
+
+type SerpApiOrganicResult = {
+  title?: string;
+  snippet?: string;
+  link?: string;
+  displayed_link?: string;
+  source?: string;
+};
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null;
+
+const isOrganicResult = (v: unknown): v is SerpApiOrganicResult =>
+  isRecord(v);
 
 function parseMoney(s: string): ParsedMoney | null {
   const m = s.match(MONEY_RE);
@@ -17,8 +31,8 @@ function parseMoney(s: string): ParsedMoney | null {
   const raw = (numRaw || "").replace(/[, ]/g, "");
   const unitNorm =
     unitRaw && /^(billion|bn|b)$/i.test(unitRaw) ? "billion" :
-    unitRaw && /^(million|m)$/i.test(unitRaw) ? "million" :
-    null;
+      unitRaw && /^(million|m)$/i.test(unitRaw) ? "million" :
+        null;
 
   const n = Number(raw);
   if (!Number.isFinite(n)) return null;
@@ -120,11 +134,14 @@ export async function evaluateWithSerp(
       url.searchParams.set("api_key", apiKey);
 
       const res = await fetch(url.toString(), { signal: ac.signal });
-      const json = await res.json().catch(() => null);
-      if (!json) continue;
+      const raw: unknown = await res.json().catch(() => null);
+      if (!isRecord(raw)) continue;
 
-      const org: any[] = Array.isArray(json?.organic_results) ? json.organic_results : [];
-
+      const orgRaw = raw["organic_results"];
+      const org: SerpApiOrganicResult[] = Array.isArray(orgRaw)
+        ? orgRaw.filter(isOrganicResult)
+        : [];
+        
       for (const r of org) {
         const title = r?.title ?? "";
         const snippet = r?.snippet ?? "";

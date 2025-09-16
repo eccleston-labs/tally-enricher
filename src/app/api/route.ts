@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
 
     const res = await postToClay({ payload: payloadForClay, url: clayUrl, timeoutMs: 1500, retries: 1 });
     clayResult = { ok: res.ok, status: "status" in res ? res.status : undefined, error: !res.ok ? res.error : undefined };
-    console.log("[Clay]", JSON.stringify({ attempted: true, ok: res.ok, status: (res as any).status }, null, 0));
+    console.log("[Clay]", JSON.stringify({ attempted: true, ok: res.ok, status: (res).status }, null, 0));
   } else {
     console.log("[Clay] skipped", JSON.stringify({ doClay, hasUrl: !!clayUrl }, null, 0));
   }
