@@ -28,6 +28,12 @@ export default function DashboardPage() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
 
+    function sanitizeNumber(n: unknown, fallback = undefined) {
+      // Accepts string or number, returns number or fallback.
+      const num = typeof n === "number" ? n : Number(n);
+      return typeof num === "number" && !isNaN(num) ? num : fallback;
+    }
+
     console.log(data);
 
     try {
@@ -37,9 +43,9 @@ export default function DashboardPage() {
         booking_url: data.booking_url,
         success_page_url: data.success_page_url,
         criteria: {
-          min_employees: Number(data.min_employees),
-          min_funding_usd: Number(data.min_funding_usd),
-          min_revenue_usd: Number(data.min_revenue_usd),
+          min_employees: sanitizeNumber(data.min_employees),
+          min_funding_usd: sanitizeNumber(data.min_funding_usd),
+          min_revenue_usd: sanitizeNumber(data.min_revenue_usd),
         },
       });
 
@@ -164,7 +170,6 @@ export default function DashboardPage() {
           <input
             type="number"
             {...register("min_funding_usd", {
-              required: "Required",
               min: 0,
               valueAsNumber: true,
             })}
@@ -185,7 +190,6 @@ export default function DashboardPage() {
           <input
             type="number"
             {...register("min_revenue_usd", {
-              required: "Required",
               min: 0,
               valueAsNumber: true,
             })}
