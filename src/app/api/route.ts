@@ -1,7 +1,6 @@
 // app/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { enrichWithAPIs, scoreLead, type Answers } from "@/lib/enrich";
-import { postToClay } from "@/lib/post_to_clay";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,50 +53,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Missing work_email" }, { status: 400 });
   }
 
+  // Optional: receive config/criteria passed from client
+  const cfg = get(body, "config");
+  const crit = get(body, "criteria");
+
   const enriched = await enrichWithAPIs(answers);
-  const decision = scoreLead(enriched);
 
-  // ---- Clay toggle: env OR query (?post_to_clay=true) OR header (x-post-to-clay: 1)
-  const url = new URL(req.url);
-  const clayEnabledEnv = process.env.CLAY_ENABLED === "true";
-  const clayEnabledReq =
-    (url.searchParams.get("post_to_clay") ?? "").toLowerCase() === "true" ||
-    req.headers.get("x-post-to-clay") === "1";
-  const doClay = clayEnabledEnv || clayEnabledReq;
-
-  const clayUrl = process.env.CLAY_WEBHOOK_URL;
-  let clayResult: { ok: boolean; status?: number; error?: string } | null = null;
-
-  if (doClay && clayUrl) {
-    const payloadForClay = {
-      id: sid,
-      received_at: new Date().toISOString(),
-      source: "tally-redirect",
-      inputs: {
-        company_name: answers["Company Name"],
-        work_email: answers["Email Address"],
-        company_size: answers["Company Size"],
-        company_seats: answers["Number of Seats"],
-        computers: answers["Computers"],
-        email_calendar: asStr(get(body, "email_calendar")),
-        questions: asStr(get(body, "questions")),
-      },
-      derived: enriched.derived,
-      companyEnrichment: enriched.companyEnrichment ?? null,
-      decision,
-      request_meta: {
-        ip: req.headers.get("x-forwarded-for") ?? null,
-        user_agent: req.headers.get("user-agent") ?? null,
-        host: req.headers.get("host") ?? null,
-      },
-    };
-
-    const res = await postToClay({ payload: payloadForClay, url: clayUrl, timeoutMs: 1500, retries: 1 });
-    clayResult = { ok: res.ok, status: "status" in res ? res.status : undefined, error: !res.ok ? res.error : undefined };
-    console.log("[Clay]", JSON.stringify({ attempted: true, ok: res.ok, status: (res).status }, null, 0));
-  } else {
-    console.log("[Clay] skipped", JSON.stringify({ doClay, hasUrl: !!clayUrl }, null, 0));
-  }
+  // If scoreLead can use thresholds, you can thread them in here.
+  // Otherwise, just keep the existing call:
+  const decision = scoreLead(enriched /*, cfg, crit */);
 
   return NextResponse.json({
     ok: true,
@@ -108,7 +72,9 @@ export async function POST(req: NextRequest) {
       companyEnrichment: enriched.companyEnrichment ?? null,
       debug: enriched.debug ?? null,
     },
-    clay: clayResult,
+    // Echo back for debugging/visibility
+    config: isRecord(cfg) ? cfg : null,
+    criteria: isRecord(crit) ? crit : null,
   });
 }
 

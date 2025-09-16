@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       console.error(`[SB] error ${ms}ms`, {
         workspace_name: workspaceName,
         error: error.message,
-        code: (error).code,
+        code: (error as any).code,
       });
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
@@ -48,16 +48,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: false, error: `Unknown workspace "${workspaceName}"` }, { status: 404 });
     }
 
-    // Log data
-    console.log(`[SB] raw ${ms}ms`, {
+    const config = Array.isArray(data.configurations) ? data.configurations[0] ?? null : null;
+    const criteria = Array.isArray(data.criteria) ? data.criteria[0] ?? null : null;
+
+    // Booking = approved, Success = rejected
+    const approved_redirect_url = config?.booking_url ?? "";
+    const rejected_redirect_url = config?.success_page_url ?? "";
+
+    console.log(`[SB] done ${ms}ms`, {
       workspace_id: data.id,
       workspace_name: data.workspace_name,
-      configurations: data.configurations,
-      criteria: data.criteria,
+      has_config: !!config,
+      has_criteria: !!criteria,
     });
 
-    return NextResponse.json({ ok: true, workspace: data });
-
+    return NextResponse.json({
+      ok: true,
+      config,
+      criteria,
+      approved_redirect_url,
+      rejected_redirect_url,
+    });
   } catch (e) {
     const ms = Date.now() - t0;
     console.error(`[SB] exception ${ms}ms`, { workspace_name: workspaceName, error: String(e) });
