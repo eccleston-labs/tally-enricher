@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       console.error(`[SB] error ${ms}ms`, {
         workspace_name: workspaceName,
         error: error.message,
-        code: (error as any).code,
+        code: (error).code,
       });
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }

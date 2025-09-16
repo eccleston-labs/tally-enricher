@@ -26,8 +26,8 @@ export default function DecisionInner() {
     (async () => {
       let approvedUrl = "";
       let rejectedUrl = "";
-      let config: any = null;
-      let criteria: any = null;
+      let config= null;
+      let criteria=null;
 
       // 1) Fetch workspace config (URLs + settings)
       try {
