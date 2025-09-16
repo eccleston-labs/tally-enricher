@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { createClient } from "@/lib/supabase/client";
 
 interface FormData {
   formProvider: string;
@@ -20,7 +19,6 @@ export default function DashboardPage() {
   const [showCriteria, setShowCriteria] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
 
   const {
     register,
@@ -64,39 +62,7 @@ export default function DashboardPage() {
       console.log("Complete form submission:", combinedData);
 
       // For now, use a hardcoded workspace_id - you'll need to implement workspace management
-      const TEMP_WORKSPACE_ID = "de4bb877-a5f0-416c-82bd-c530e76832e8";
-
-      // Run both updates in sequence
-      const [configResult, criteriaResult] = await Promise.all([
-        supabase
-          .from("configurations")
-          .update({
-            form_provider: formData.formProvider,
-            booking_url:
-              formData.calendarApp === "other"
-                ? formData.otherCalendarApp
-                : formData.calendarApp,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("workspace_id", TEMP_WORKSPACE_ID),
-
-        supabase
-          .from("criteria")
-          .update({
-            min_employees: data.headcount,
-            min_funding_usd: data.funding,
-            min_revenue_usd: data.arr,
-          })
-          .eq("workspace_id", TEMP_WORKSPACE_ID),
-      ]);
-
-      if (configResult.error) {
-        throw new Error(`Configuration error: ${configResult.error.message}`);
-      }
-
-      if (criteriaResult.error) {
-        throw new Error(`Criteria error: ${criteriaResult.error.message}`);
-      }
+      // const TEMP_WORKSPACE_ID = "de4bb877-a5f0-416c-82bd-c530e76832e8";
 
       // Clear localStorage on successful submission
       localStorage.removeItem("formData");
