@@ -57,12 +57,16 @@ export function qualifyLead(
   if (size === "10001+") return { result: true, reason: "size" };
 
   // Check employee threshold
-  if (employees && employees >= min_employees)
+  if (employees && min_employees && employees >= min_employees)
     return { result: true, reason: "employees" };
 
   // Check funding threshold
-  if (funding && funding >= min_funding_usd)
+  if (funding && min_funding_usd && funding >= min_funding_usd)
     return { result: true, reason: "funding" };
+
+  // Check revenue threshold - not implemented yet, we aren't getting revenue data
+  // if (revenue && min_revenue_usd && revenue >= min_revenue_usd)
+  //   return { result: true, reason: "revenue" };
 
   return { result: false, reason: "no criteria met" };
 }

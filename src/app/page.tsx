@@ -37,14 +37,16 @@ export default async function HomePage({
 
   // Non-blocking analytics: don't await!
   const analyticsStart = performance.now();
-  fetchMutation(api.analytics.insert, {
-    event: "lead_qualification",
-    email,
-    domain,
-    workspaceName,
-    qualified,
-    ts: Date.now(),
-  }).catch(() => {});
+  if (process.env.NODE_ENV === "development") {
+    fetchMutation(api.analytics.insert, {
+      event: "lead_qualification",
+      email,
+      domain,
+      workspaceName,
+      qualified,
+      ts: Date.now(),
+    }).catch(() => {});
+  }
   const analyticsTime = performance.now() - analyticsStart;
 
   const totalTime = performance.now() - startTime;

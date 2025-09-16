@@ -28,7 +28,7 @@ export default function DashboardPage() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
 
-    function sanitizeNumber(n: unknown, fallback = undefined) {
+    function sanitizeNumber(n: unknown, fallback = 10000) {
       // Accepts string or number, returns number or fallback.
       const num = typeof n === "number" ? n : Number(n);
       return typeof num === "number" && !isNaN(num) ? num : fallback;
