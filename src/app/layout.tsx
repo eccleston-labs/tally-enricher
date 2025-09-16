@@ -4,7 +4,7 @@ import "./globals.css";
 import "./styles.css"; // your global CSS
 
 export const metadata: Metadata = {
-  title: "Contact sales | Granola",
+  title: "Contact sales",
   description: "Lead enrichment and routing",
 };
 
