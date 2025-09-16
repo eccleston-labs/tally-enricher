@@ -6,9 +6,9 @@ export interface EnrichmentData {
 }
 
 export interface WorkspaceCriteria {
-  min_employees: number | undefined;
-  min_funding_usd: number | undefined;
-  min_revenue_usd: number | undefined;
+  min_employees?: number | undefined;
+  min_funding_usd?: number | undefined;
+  min_revenue_usd?: number | undefined;
 }
 
 export interface QualificationResult {

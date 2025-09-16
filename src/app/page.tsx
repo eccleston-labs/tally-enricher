@@ -33,6 +33,10 @@ export default async function HomePage({
   ]);
   const apiTime = performance.now() - apiStart;
 
+  if (!workspace) {
+    return <div className="p-6">Workspace not found</div>;
+  }
+
   const qualified = qualifyLead(enrichmentData, workspace.criteria);
 
   // Non-blocking analytics: don't await!
