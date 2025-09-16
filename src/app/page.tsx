@@ -10,10 +10,7 @@ export default async function HomePage({
 }) {
   const startTime = performance.now();
 
-  // Profile search params
-  const paramsStart = performance.now();
   const params = await searchParams;
-  const paramsTime = performance.now() - paramsStart;
 
   const email = params.email as string;
   const workspaceName = params.workspace_name as string;
@@ -22,10 +19,7 @@ export default async function HomePage({
     return <div className="p-6">Missing email or workspace_name parameter</div>;
   }
 
-  // Profile domain extraction
-  const domainStart = performance.now();
   const domain = extractDomainFromEmail(email);
-  const domainTime = performance.now() - domainStart;
 
   if (!domain) {
     return <div className="p-6">Invalid email format</div>;
@@ -39,10 +33,7 @@ export default async function HomePage({
   ]);
   const apiTime = performance.now() - apiStart;
 
-  // Profile qualification logic
-  const qualificationStart = performance.now();
   const qualified = qualifyLead(enrichmentData, workspace.criteria);
-  const qualificationTime = performance.now() - qualificationStart;
 
   const totalTime = performance.now() - startTime;
 
@@ -51,10 +42,7 @@ export default async function HomePage({
       <h1>Lead Qualifier</h1>
       <div className="mb-4 p-3 bg-blue-50 rounded text-sm">
         <strong>⏱️ Performance:</strong>
-        <br />- Search params: {paramsTime.toFixed(2)}ms
-        <br />- Domain extraction: {domainTime.toFixed(2)}ms
         <br />- API calls (parallel): {apiTime.toFixed(2)}ms
-        <br />- Qualification logic: {qualificationTime.toFixed(2)}ms
         <br />- <strong>Total: {totalTime.toFixed(2)}ms</strong>
       </div>
       <pre className="bg-gray-100 p-4 mt-4 rounded">
