@@ -1,4 +1,4 @@
-import { fetchQuery } from "convex/nextjs";
+import { fetchQuery, fetchMutation } from "convex/nextjs";
 import { api } from "../../convex/_generated/api";
 
 import { enrichDomain, extractDomainFromEmail, qualifyLead } from "../lib";
@@ -35,6 +35,18 @@ export default async function HomePage({
 
   const qualified = qualifyLead(enrichmentData, workspace.criteria);
 
+  // Non-blocking analytics: don't await!
+  const analyticsStart = performance.now();
+  fetchMutation(api.analytics.insert, {
+    event: "lead_qualification",
+    email,
+    domain,
+    workspaceName,
+    qualified,
+    ts: Date.now(),
+  }).catch(() => {});
+  const analyticsTime = performance.now() - analyticsStart;
+
   const totalTime = performance.now() - startTime;
 
   return (
@@ -43,6 +55,7 @@ export default async function HomePage({
       <div className="mb-4 p-3 bg-blue-50 rounded text-sm">
         <strong>⏱️ Performance:</strong>
         <br />- API calls (parallel): {apiTime.toFixed(2)}ms
+        <br />- Analytics: {analyticsTime.toFixed(2)}ms
         <br />- <strong>Total: {totalTime.toFixed(2)}ms</strong>
       </div>
       <pre className="bg-gray-100 p-4 mt-4 rounded">

@@ -45,24 +45,24 @@ export function qualifyLead(
 ): QualificationResult {
   // Handle null/missing data
   if (!enrichmentData || !criteria)
-    return { qualified: false, reason: "missing_data" };
+    return { result: false, reason: "missing_data" };
 
   const { employees, funding, type, size } = enrichmentData;
   const { min_employees, min_funding_usd } = criteria;
 
   // Auto-qualify public companies
-  if (type === "public") return { qualified: true, reason: "public" };
+  if (type === "public") return { result: true, reason: "public" };
 
   // Auto-qualify by size bucket
-  if (size === "10001+") return { qualified: true, reason: "size" };
+  if (size === "10001+") return { result: true, reason: "size" };
 
   // Check employee threshold
   if (employees && employees >= min_employees)
-    return { qualified: true, reason: "employees" };
+    return { result: true, reason: "employees" };
 
   // Check funding threshold
   if (funding && funding >= min_funding_usd)
-    return { qualified: true, reason: "funding" };
+    return { result: true, reason: "funding" };
 
-  return { qualified: false, reason: "no criteria met" };
+  return { result: false, reason: "no criteria met" };
 }

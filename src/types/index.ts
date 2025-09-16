@@ -12,6 +12,6 @@ export interface WorkspaceCriteria {
 }
 
 export interface QualificationResult {
-  qualified: boolean;
+  result: boolean;
   reason: string;
 }
