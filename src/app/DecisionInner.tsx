@@ -8,13 +8,13 @@ type DecisionResp =
   | { ok: true; decision: { approved: boolean; reason?: string } }
   | { ok: false; error: string };
 
-type Campaign = {
-  id: string;
-  approved_redirect_url: string;
-  rejected_redirect_url: string;
-  calendar_link?: string | null;
-  thresholds?: { minEmployees?: number; minFundingUsd?: number; minRevenueUsd?: number };
-};
+// type Campaign = {
+//   id: string;
+//   approved_redirect_url: string;
+//   rejected_redirect_url: string;
+//   calendar_link?: string | null;
+//   thresholds?: { minEmployees?: number; minFundingUsd?: number; minRevenueUsd?: number };
+// };
 
 export default function DecisionInner() {
   const sp = useSearchParams();

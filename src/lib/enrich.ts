@@ -31,14 +31,14 @@ const toInt = (s?: string): number | null => {
   const n = parseInt(s.replace(/[^\d]/g, ""), 10);
   return Number.isFinite(n) ? n : null;
 };
-const toNumber = (v: unknown): number | null => {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = parseFloat(v.replace(/[^\d.]/g, ""));
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
-};
+// const toNumber = (v: unknown): number | null => {
+//   if (typeof v === "number" && Number.isFinite(v)) return v;
+//   if (typeof v === "string") {
+//     const n = parseFloat(v.replace(/[^\d.]/g, ""));
+//     return Number.isFinite(n) ? n : null;
+//   }
+//   return null;
+// };
 const domainFromEmail = (email?: string | null): string | null => {
   if (!email) return null;
   const m = email.match(/@([^@]+)$/);
