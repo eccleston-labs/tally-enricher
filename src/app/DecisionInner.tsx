@@ -8,12 +8,10 @@ type DecisionResp =
   | { ok: true; decision: { approved: boolean; reason?: string } }
   | { ok: false; error: string };
 
-type Campaign = {
-  id: string;
-  approved_redirect_url: string;
-  rejected_redirect_url: string;
-  calendar_link?: string | null;
-  thresholds?: { minEmployees?: number; minFundingUsd?: number; minRevenueUsd?: number };
+// Keep constants outside the component so they don't appear in deps
+const DEFAULTS = {
+  approved: "https://calendly.com/team-assemblygtm/30min",
+  rejected: "https://granola.ai/contact/sales/success",
 };
 
 export default function DecisionInner() {
@@ -33,11 +31,6 @@ export default function DecisionInner() {
     };
   }, [sp]);
 
-  const DEFAULTS = {
-    approved: "https://calendly.com/team-assemblygtm/30min",
-    rejected: "https://granola.ai/contact/sales/success",
-  };
-
   useEffect(() => {
     let cancelled = false;
 
@@ -52,8 +45,10 @@ export default function DecisionInner() {
           if (r.ok) {
             const j = await r.json();
             if (j.ok) {
-              approvedUrl = j.campaign.approved_redirect_url || approvedUrl;
-              rejectedUrl = j.campaign.rejected_redirect_url || rejectedUrl;
+              // adjust keys to your API shape
+              const campaign = j.campaign ?? j.workspace ?? {};
+              approvedUrl = campaign.approved_redirect_url || approvedUrl;
+              rejectedUrl = campaign.rejected_redirect_url || rejectedUrl;
             }
           }
         }
@@ -63,7 +58,7 @@ export default function DecisionInner() {
 
       // 2) Always POST to /api (let server decide)
       try {
-        console.log("[decision] POST /api with", payload); // <-- debug marker
+        console.log("[decision] POST /api with", payload);
         const r = await fetch("/api", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -72,7 +67,7 @@ export default function DecisionInner() {
         });
 
         const j = (await r.json()) as DecisionResp;
-        console.log("[decision] resp", j); // <-- debug marker
+        console.log("[decision] resp", j);
 
         const to = j.ok && j.decision.approved ? approvedUrl : rejectedUrl;
         if (!cancelled) window.location.href = to;
@@ -82,8 +77,10 @@ export default function DecisionInner() {
       }
     })();
 
-    return () => { cancelled = true; };
-  }, [payload]);
+    return () => {
+      cancelled = true;
+    };
+  }, [payload]); // DEFAULTS no longer needed here
 
   return (
     <div className="loader-container">

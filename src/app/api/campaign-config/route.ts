@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       console.error(`[SB] error ${ms}ms`, {
         workspace_name: workspaceName,
         error: error.message,
-        code: (error as any).code,
+        code: (error).code,
       });
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
@@ -58,9 +58,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ ok: true, workspace: data });
 
-  } catch (e: any) {
+  } catch (e) {
     const ms = Date.now() - t0;
-    console.error(`[SB] exception ${ms}ms`, { workspace_name: workspaceName, error: String(e?.message || e) });
+    console.error(`[SB] exception ${ms}ms`, { workspace_name: workspaceName, error: String(e) });
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 }
