@@ -20,7 +20,7 @@ export async function enrichDomain(domain: string) {
       },
     );
 
-    if (!response.ok) return null;
+    if (!response.ok) throw new Error("Failed to fetch data");
 
     const data = await response.json();
     return {
@@ -30,7 +30,12 @@ export async function enrichDomain(domain: string) {
       size: data?.size,
     };
   } catch {
-    return null;
+    return {
+      employees: null,
+      funding: null,
+      type: null,
+      size: null,
+    };
   }
 }
 
@@ -40,7 +45,7 @@ export function extractDomainFromEmail(email: string) {
 }
 
 export function qualifyLead(
-  enrichmentData: EnrichmentData | null,
+  enrichmentData: EnrichmentData,
   criteria: WorkspaceCriteria | null,
 ): QualificationResult {
   // Handle null/missing data

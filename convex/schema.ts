@@ -8,13 +8,11 @@ export default defineSchema({
     booking_url: v.string(),
     success_page_url: v.string(),
     form_provider: v.string(),
-    criteria: v.optional(
-      v.object({
-        min_employees: v.optional(v.number()),
-        min_funding_usd: v.optional(v.number()),
-        min_revenue_usd: v.optional(v.number()),
-      }),
-    ),
+    criteria: v.object({
+      min_employees: v.optional(v.number()),
+      min_funding_usd: v.optional(v.number()),
+      min_revenue_usd: v.optional(v.number()),
+    }),
   }),
   Analytics: defineTable({
     event: v.string(),
