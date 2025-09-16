@@ -1,7 +1,13 @@
 import { fetchQuery, fetchMutation } from "convex/nextjs";
 import { api } from "../../convex/_generated/api";
 
-import { enrichDomain, extractDomainFromEmail, qualifyLead } from "../lib";
+import {
+  enrichDomain,
+  extractDomainFromEmail,
+  qualifyLead,
+  getWorkspaceWithCache,
+} from "../lib";
+import { get } from "../../convex/workspaces";
 
 export default async function HomePage({
   searchParams,
@@ -28,7 +34,7 @@ export default async function HomePage({
   // Profile parallel API calls
   const apiStart = performance.now();
   const [workspace, enrichmentData] = await Promise.all([
-    fetchQuery(api.workspaces.getByName, { name: workspaceName }),
+    getWorkspaceWithCache(workspaceName),
     enrichDomain(domain),
   ]);
   const apiTime = performance.now() - apiStart;

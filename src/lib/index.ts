@@ -3,9 +3,33 @@ import {
   QualificationResult,
   WorkspaceCriteria,
 } from "../types";
+import { api } from "../../convex/_generated/api";
+import { DataModel } from "../../convex/_generated/dataModel";
+import { fetchQuery } from "convex/nextjs";
 
-export async function enrichDomain(domain: string) {
+import { Redis } from "@upstash/redis";
+
+type Workspace = DataModel["Workspaces"]["document"];
+
+export const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
+
+export async function enrichDomain(
+  domain: string,
+  expiry = 604800,
+): Promise<EnrichmentData> {
   if (!process.env.PDL_API_KEY) throw new Error("Missing PDL_API_KEY");
+
+  console.log(`Enriching domain: ${domain}`);
+
+  const cacheKey = `enrichment:${domain}`;
+  const cached = await redis.get(cacheKey);
+
+  if (cached) {
+    return cached as EnrichmentData;
+  }
 
   try {
     const response = await fetch(
@@ -20,15 +44,19 @@ export async function enrichDomain(domain: string) {
       },
     );
 
+    console.log(response.status);
+
     if (!response.ok) throw new Error("Failed to fetch data");
 
     const data = await response.json();
-    return {
-      employees: data?.employee_count,
-      funding: data?.total_funding_raised,
-      type: data?.type,
-      size: data?.size,
+    const enriched = {
+      employees: data?.employee_count ?? null,
+      funding: data?.total_funding_raised ?? null,
+      type: data?.type ?? null,
+      size: data?.size ?? null,
     };
+    await redis.set(cacheKey, JSON.stringify(enriched), { ex: expiry });
+    return enriched;
   } catch {
     return {
       employees: null,
@@ -74,4 +102,20 @@ export function qualifyLead(
   //   return { result: true, reason: "revenue" };
 
   return { result: false, reason: "no criteria met" };
+}
+
+export async function getWorkspaceWithCache(name: string, expiry = 86400) {
+  const cacheKey = `workspace:${name}`;
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    return cached as Workspace;
+  }
+
+  // Fallback to Convex
+  const workspace = await fetchQuery(api.workspaces.getByName, { name });
+
+  if (workspace) {
+    await redis.set(cacheKey, JSON.stringify(workspace), { ex: expiry });
+  }
+  return workspace;
 }
