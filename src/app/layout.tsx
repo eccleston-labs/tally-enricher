@@ -1,5 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
+import "./globals.css";
 import "./styles.css"; // your global CSS
 
 export const metadata: Metadata = {
