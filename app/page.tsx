@@ -1,5 +1,6 @@
 import { fetchMutation } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
+import { redirect } from "next/navigation";
 
 import {
   enrichDomain,
@@ -44,6 +45,15 @@ export default async function HomePage({
 
   const qualified = qualifyLead(enrichmentData, workspace.criteria);
 
+  // console.log("Qualification result:", qualified);
+  if (qualified.result === true && workspace.booking_url) {
+    // console.log("Redirecting to booking_url:", workspace.booking_url);
+    redirect(workspace.booking_url);
+  } else if (qualified.result === false && workspace.success_page_url) {
+    // console.log("Redirecting to success_page_url:", workspace.success_page_url);
+    redirect(workspace.success_page_url);
+  }
+
   // Non-blocking analytics: don't await!
   const analyticsStart = performance.now();
   if (process.env.NODE_ENV !== "development") {
@@ -54,7 +64,7 @@ export default async function HomePage({
       workspaceName,
       qualified,
       ts: Date.now(),
-    }).catch(() => {});
+    }).catch(() => { });
   }
   const analyticsTime = performance.now() - analyticsStart;
 

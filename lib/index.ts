@@ -62,7 +62,16 @@ export async function enrichDomain(
       },
     );
 
-    if (!response.ok) throw new Error("Failed to fetch data");
+    if (!response.ok) {
+      console.error("Failed to fetch data from PDL");
+      return {
+        name: null,
+        employees: null,
+        funding: null,
+        type: null,
+        size: null,
+      };
+    }
 
     const data = await response.json();
     console.log("PDL API response:", data);
