@@ -21,9 +21,17 @@ export function extractDomainFromEmail(email: string) {
   return parts.length === 2 ? parts[1] : null;
 }
 
-async function enrichAndQualify(email: string, workspaceName: string) {
-  // TODO implement
-  return 0;
+export async function enrichAndQualify(
+  email: string,
+  criteria: WorkspaceCriteria,
+): Promise<QualificationResult> {
+  const domain = extractDomainFromEmail(email);
+  if (!domain) {
+    return { result: false, reason: "invalid_email" };
+  }
+
+  const enrichmentData = await enrichDomain(domain);
+  return qualifyLead(enrichmentData, criteria);
 }
 
 export async function enrichDomain(
@@ -57,16 +65,20 @@ export async function enrichDomain(
     if (!response.ok) throw new Error("Failed to fetch data");
 
     const data = await response.json();
+    console.log("PDL API response:", data);
+
     const enriched = {
-      name: data?.name ?? null, // <-- Add company name here
+      name: data?.name ?? null,
       employees: data?.employee_count ?? null,
       funding: data?.total_funding_raised ?? null,
       type: data?.type ?? null,
       size: data?.size ?? null,
     };
+    console.log(`PDL enrichment for ${domain}:`, enriched); // <-- Log enriched result
     await redis.set(cacheKey, JSON.stringify(enriched), { ex: expiry });
     return enriched;
-  } catch {
+  } catch (err) {
+    console.error("PDL enrichment error:", err);
     return {
       name: null,
       employees: null,

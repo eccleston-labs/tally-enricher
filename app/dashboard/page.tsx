@@ -68,7 +68,7 @@ export default function DashboardPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Check Lead Qualification
               </label>
-              <QualificationForm />
+              <QualificationForm workspaceName={workspaceName} />
             </div>
           </div>
         </div>
