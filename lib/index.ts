@@ -74,7 +74,7 @@ export async function enrichDomain(
       type: data?.type ?? null,
       size: data?.size ?? null,
     };
-    console.log(`PDL enrichment for ${domain}:`, enriched); // <-- Log enriched result
+    console.log(`PDL enrichment for ${domain}:`, enriched);
     await redis.set(cacheKey, JSON.stringify(enriched), { ex: expiry });
     return enriched;
   } catch (err) {
