@@ -16,6 +16,16 @@ export const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
+export function extractDomainFromEmail(email: string) {
+  const parts = email.split("@");
+  return parts.length === 2 ? parts[1] : null;
+}
+
+async function enrichAndQualify(email: string, workspaceName: string) {
+  // TODO implement
+  return 0;
+}
+
 export async function enrichDomain(
   domain: string,
   expiry = 604800,
@@ -44,8 +54,6 @@ export async function enrichDomain(
       },
     );
 
-    console.log(response.status);
-
     if (!response.ok) throw new Error("Failed to fetch data");
 
     const data = await response.json();
@@ -65,11 +73,6 @@ export async function enrichDomain(
       size: null,
     };
   }
-}
-
-export function extractDomainFromEmail(email: string) {
-  const parts = email.split("@");
-  return parts.length === 2 ? parts[1] : null;
 }
 
 export function qualifyLead(
