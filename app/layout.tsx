@@ -1,7 +1,7 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
+
 import "./globals.css";
-import "./styles.css"; // your global CSS
+import { ConvexClientProvider } from "./convex-client-provider";
 
 export const metadata: Metadata = {
   title: "Contact sales",
@@ -15,7 +15,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="antialiased">
+        <ConvexClientProvider>{children}</ConvexClientProvider>
+      </body>
     </html>
   );
 }

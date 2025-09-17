@@ -1,0 +1,2 @@
+- Implement the test form in the 'instructions' tab in /dashboard; currently it's a no-op [ ]
+- Pull in the actual workspace name in the integration snippet in the same tab; don't worry about the URL for now [ ]
