@@ -1,13 +1,12 @@
-import { fetchQuery, fetchMutation } from "convex/nextjs";
-import { api } from "../../convex/_generated/api";
+import { fetchMutation } from "convex/nextjs";
+import { api } from "@/convex/_generated/api";
 
 import {
   enrichDomain,
   extractDomainFromEmail,
   qualifyLead,
   getWorkspaceWithCache,
-} from "../lib";
-import { get } from "../../convex/workspaces";
+} from "@/lib";
 
 export default async function HomePage({
   searchParams,
@@ -47,7 +46,7 @@ export default async function HomePage({
 
   // Non-blocking analytics: don't await!
   const analyticsStart = performance.now();
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV !== "development") {
     fetchMutation(api.analytics.insert, {
       event: "lead_qualification",
       email,

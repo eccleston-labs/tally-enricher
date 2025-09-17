@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "convex/react";
 
-import { api } from "../../../convex/_generated/api";
+import { api } from "@/convex/_generated/api";
 
 interface FormData {
   workspace_name: string;
@@ -103,7 +103,7 @@ export function WorkspaceForm() {
           <p className="text-sm text-red-600">{errors.booking_url.message}</p>
         )}
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Success URL (for other leads)

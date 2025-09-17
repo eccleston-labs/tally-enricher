@@ -6,7 +6,7 @@ import {
   IntegrationSnippet,
   QualificationForm,
   WorkspaceForm,
-} from "../../components/form";
+} from "@/components/form";
 
 const TABS = [
   { key: "update", label: "Update Workspace" },

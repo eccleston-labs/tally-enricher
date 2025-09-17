@@ -1,13 +1,13 @@
+import { fetchQuery } from "convex/nextjs";
+import { Redis } from "@upstash/redis";
+
 import {
   EnrichmentData,
   QualificationResult,
   WorkspaceCriteria,
-} from "../types";
-import { api } from "../../convex/_generated/api";
-import { DataModel } from "../../convex/_generated/dataModel";
-import { fetchQuery } from "convex/nextjs";
-
-import { Redis } from "@upstash/redis";
+} from "@/types";
+import { api } from "@/convex/_generated/api";
+import { DataModel } from "@/convex/_generated/dataModel";
 
 type Workspace = DataModel["Workspaces"]["document"];
 
