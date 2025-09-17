@@ -58,6 +58,7 @@ export async function enrichDomain(
 
     const data = await response.json();
     const enriched = {
+      name: data?.name ?? null, // <-- Add company name here
       employees: data?.employee_count ?? null,
       funding: data?.total_funding_raised ?? null,
       type: data?.type ?? null,
@@ -67,6 +68,7 @@ export async function enrichDomain(
     return enriched;
   } catch {
     return {
+      name: null,
       employees: null,
       funding: null,
       type: null,
