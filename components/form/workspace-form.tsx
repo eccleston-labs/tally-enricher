@@ -14,7 +14,11 @@ interface FormData {
   min_revenue_usd: number;
 }
 
-export function WorkspaceForm() {
+export function WorkspaceForm({
+  setWorkspaceName,
+}: {
+  setWorkspaceName: (name: string) => void;
+}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateWorkspace = useMutation(api.workspaces.update);
   const {
@@ -31,6 +35,9 @@ export function WorkspaceForm() {
       const num = typeof n === "number" ? n : Number(n);
       return typeof num === "number" && !isNaN(num) ? num : fallback;
     }
+
+    // Set workspace name in parent state
+    setWorkspaceName(data.workspace_name);
 
     try {
       await updateWorkspace({
