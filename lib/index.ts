@@ -21,11 +21,6 @@ export function extractDomainFromEmail(email: string) {
   return parts.length === 2 ? parts[1] : null;
 }
 
-async function enrichAndQualify(email: string, workspaceName: string) {
-  // TODO implement
-  return 0;
-}
-
 export async function enrichDomain(
   domain: string,
   expiry = 604800,
