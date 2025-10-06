@@ -12,6 +12,9 @@ import {
 const GRANOLA_SLACK_URL =
   "https://hooks.slack.com/services/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";
 
+const SUCCESS_REDIRECT = "https://cal.com/dom-eccleston/30min";
+const DISQUALIFY_REDIRECT = "https://granola.ai/";
+
 export default async function HomePage({
   searchParams,
 }: {
@@ -25,13 +28,41 @@ export default async function HomePage({
   const workspaceName = params.workspace_name as string;
 
   if (!email || !workspaceName) {
-    return <div className="p-6">Missing email or workspace_name parameter</div>;
+    if (process.env.NODE_ENV !== "development") {
+      if (workspaceName === "granola") {
+        await fetch(GRANOLA_SLACK_URL, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            error: "Missing email or workspace_name parameter",
+          }),
+        });
+      }
+    }
+    redirect(DISQUALIFY_REDIRECT);
   }
 
-  const domain = extractDomainFromEmail(email);
+  const emailFormatted = decodeURIComponent(email);
+  console.log(emailFormatted);
+  const domain = extractDomainFromEmail(emailFormatted);
 
   if (!domain) {
-    return <div className="p-6">Invalid email format</div>;
+    if (process.env.NODE_ENV !== "development") {
+      if (workspaceName === "granola") {
+        await fetch(GRANOLA_SLACK_URL, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            error: "Invalid email format",
+          }),
+        });
+      }
+    }
+    redirect(DISQUALIFY_REDIRECT);
   }
 
   // Profile parallel API calls
@@ -43,7 +74,20 @@ export default async function HomePage({
   const apiTime = performance.now() - apiStart;
 
   if (!workspace) {
-    return <div className="p-6">Workspace not found</div>;
+    if (process.env.NODE_ENV !== "development") {
+      if (workspaceName === "granola") {
+        await fetch(GRANOLA_SLACK_URL, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            error: "Workspace not found",
+          }),
+        });
+      }
+    }
+    redirect(DISQUALIFY_REDIRECT);
   }
 
   const qualified = qualifyLead(enrichmentData, workspace.criteria);
@@ -82,34 +126,15 @@ export default async function HomePage({
       workspaceName,
       qualified,
       ts: Date.now(),
-    }).catch(() => { });
+    }).catch(() => {});
   }
   const analyticsTime = performance.now() - analyticsStart;
 
   const totalTime = performance.now() - startTime;
 
-  return (
-    <div className="p-6">
-      <h1>Lead Qualifier</h1>
-      <div className="mb-4 p-3 bg-blue-50 rounded text-sm">
-        <strong>⏱️ Performance:</strong>
-        <br />- API calls (parallel): {apiTime.toFixed(2)}ms
-        <br />- Analytics: {analyticsTime.toFixed(2)}ms
-        <br />- <strong>Total: {totalTime.toFixed(2)}ms</strong>
-      </div>
-      <pre className="bg-gray-100 p-4 mt-4 rounded">
-        {JSON.stringify(
-          {
-            email,
-            domain,
-            workspace,
-            enrichmentData,
-            qualified,
-          },
-          null,
-          2,
-        )}
-      </pre>
-    </div>
-  );
+  if (qualified.result) {
+    redirect(SUCCESS_REDIRECT);
+  }
+
+  redirect(DISQUALIFY_REDIRECT);
 }
