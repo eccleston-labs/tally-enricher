@@ -1,17 +1,25 @@
 import { useState } from "react";
 
-export function QualificationForm() {
+export function QualificationForm({ workspaceName }: { workspaceName: string }) {
   const [email, setEmail] = useState("");
   const [result, setResult] = useState<null | boolean>(null);
   const [isChecking, setIsChecking] = useState(false);
 
-  function onCheck(e: React.FormEvent) {
+  async function onCheck(e: React.FormEvent) {
     e.preventDefault();
     setIsChecking(true);
-    setTimeout(() => {
-      setResult(Math.random() < 0.5);
-      setIsChecking(false);
-    }, 700);
+    try {
+      const res = await fetch("/api/qualify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, workspaceName }),
+      });
+      const data = await res.json();
+      setResult(data.result);
+    } catch {
+      setResult(false);
+    }
+    setIsChecking(false);
   }
 
   return (

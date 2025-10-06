@@ -49,19 +49,34 @@ export async function enrichDomain(
       },
     );
 
-    if (!response.ok) throw new Error("Failed to fetch data");
+    if (!response.ok) {
+      console.error("Failed to fetch data from PDL");
+      return {
+        name: null,
+        employees: null,
+        funding: null,
+        type: null,
+        size: null,
+      };
+    }
 
     const data = await response.json();
+    console.log("PDL API response:", data);
+
     const enriched = {
+      name: data?.name ?? null,
       employees: data?.employee_count ?? null,
       funding: data?.total_funding_raised ?? null,
       type: data?.type ?? null,
       size: data?.size ?? null,
     };
+    console.log(`PDL enrichment for ${domain}:`, enriched);
     await redis.set(cacheKey, JSON.stringify(enriched), { ex: expiry });
     return enriched;
-  } catch {
+  } catch (err) {
+    console.error("PDL enrichment error:", err);
     return {
+      name: null,
       employees: null,
       funding: null,
       type: null,

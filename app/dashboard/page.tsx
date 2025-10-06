@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import "../globals.css";
+
 import {
   IntegrationSnippet,
   QualificationForm,
@@ -13,11 +15,11 @@ const TABS = [
   { key: "instructions", label: "Instructions" },
 ];
 
-const workspaceName = "granola";
 const appUrl = "https://example.com";
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("update");
+  const [workspaceName, setWorkspaceName] = useState("");
 
   return (
     <div className="max-w-3xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
@@ -45,7 +47,9 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold mb-6 text-gray-800">
             Workspace Configuration
           </h1>
-          <WorkspaceForm />
+          <WorkspaceForm
+            setWorkspaceName={setWorkspaceName}
+          />
         </>
       )}
 
@@ -68,7 +72,7 @@ export default function DashboardPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Check Lead Qualification
               </label>
-              <QualificationForm />
+              <QualificationForm workspaceName={workspaceName} />
             </div>
           </div>
         </div>

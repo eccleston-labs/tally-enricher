@@ -1,4 +1,5 @@
 export interface EnrichmentData {
+  name: string | null;
   employees: number | null;
   funding: number | null;
   type: string | null;

@@ -1,5 +1,6 @@
 import { fetchMutation } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
+import { redirect } from "next/navigation";
 
 import {
   enrichDomain,
@@ -81,7 +82,7 @@ export default async function HomePage({
       workspaceName,
       qualified,
       ts: Date.now(),
-    }).catch(() => {});
+    }).catch(() => { });
   }
   const analyticsTime = performance.now() - analyticsStart;
 
