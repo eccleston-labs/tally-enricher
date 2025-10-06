@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "convex/react";
+import type { Doc } from "@/convex/_generated/dataModel";
 
 import { api } from "@/convex/_generated/api";
 
@@ -16,16 +17,45 @@ interface FormData {
 
 export function WorkspaceForm({
   setWorkspaceName,
+  initialData,
 }: {
   setWorkspaceName: (name: string) => void;
+  initialData?: Doc<"Workspaces"> | null;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateWorkspace = useMutation(api.workspaces.update);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormData>();
+    reset,
+  } = useForm<FormData>({
+    defaultValues: {
+      workspace_name: "",
+      form_provider: "",
+      booking_url: "",
+      success_page_url: "",
+      min_employees: 400,
+      min_funding_usd: 100000000,
+      min_revenue_usd: 50000000,
+    },
+  });
+
+  // Pre-populate form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        workspace_name: initialData.workspace_name,
+        form_provider: initialData.form_provider,
+        booking_url: initialData.booking_url,
+        success_page_url: initialData.success_page_url,
+        min_employees: initialData.criteria?.min_employees || 400,
+        min_funding_usd: initialData.criteria?.min_funding_usd || 100000000,
+        min_revenue_usd: initialData.criteria?.min_revenue_usd || 50000000,
+      });
+    }
+  }, [initialData, reset]);
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -145,7 +175,6 @@ export function WorkspaceForm({
             valueAsNumber: true,
           })}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          defaultValue={400}
         />
         {errors.min_employees && (
           <p className="text-sm text-red-600">{errors.min_employees.message}</p>
@@ -163,7 +192,6 @@ export function WorkspaceForm({
             valueAsNumber: true,
           })}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          defaultValue={100000000}
         />
         {errors.min_funding_usd && (
           <p className="text-sm text-red-600">
@@ -183,7 +211,6 @@ export function WorkspaceForm({
             valueAsNumber: true,
           })}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          defaultValue={50000000}
         />
         {errors.min_revenue_usd && (
           <p className="text-sm text-red-600">
@@ -197,7 +224,11 @@ export function WorkspaceForm({
         disabled={isSubmitting}
         className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
       >
-        {isSubmitting ? "Updating..." : "Update Workspace"}
+        {isSubmitting
+          ? "Updating..."
+          : initialData
+            ? "Update Workspace"
+            : "Create Workspace"}
       </button>
     </form>
   );
