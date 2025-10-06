@@ -21,19 +21,6 @@ export function extractDomainFromEmail(email: string) {
   return parts.length === 2 ? parts[1] : null;
 }
 
-export async function enrichAndQualify(
-  email: string,
-  criteria: WorkspaceCriteria,
-): Promise<QualificationResult> {
-  const domain = extractDomainFromEmail(email);
-  if (!domain) {
-    return { result: false, reason: "invalid_email" };
-  }
-
-  const enrichmentData = await enrichDomain(domain);
-  return qualifyLead(enrichmentData, criteria);
-}
-
 export async function enrichDomain(
   domain: string,
   expiry = 604800,

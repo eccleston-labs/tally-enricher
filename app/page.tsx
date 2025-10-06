@@ -9,6 +9,9 @@ import {
   getWorkspaceWithCache,
 } from "@/lib";
 
+const GRANOLA_SLACK_URL =
+  "https://hooks.slack.com/services/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";
+
 export default async function HomePage({
   searchParams,
 }: {
@@ -45,18 +48,33 @@ export default async function HomePage({
 
   const qualified = qualifyLead(enrichmentData, workspace.criteria);
 
-  // console.log("Qualification result:", qualified);
-  if (qualified.result === true && workspace.booking_url) {
-    // console.log("Redirecting to booking_url:", workspace.booking_url);
-    redirect(workspace.booking_url);
-  } else if (qualified.result === false && workspace.success_page_url) {
-    // console.log("Redirecting to success_page_url:", workspace.success_page_url);
-    redirect(workspace.success_page_url);
-  }
+  const fieldsStr = JSON.stringify({
+    email,
+    domain,
+    workspace,
+    enrichmentData,
+    qualified,
+  });
 
   // Non-blocking analytics: don't await!
   const analyticsStart = performance.now();
+
   if (process.env.NODE_ENV !== "development") {
+    if (workspaceName === "granola") {
+      console.log("running");
+      const res = await fetch(GRANOLA_SLACK_URL, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          text: fieldsStr,
+        }),
+      });
+      console.log(res.status);
+      const data = await res.text();
+      console.log({ data });
+    }
     fetchMutation(api.analytics.insert, {
       event: "lead_qualification",
       email,
