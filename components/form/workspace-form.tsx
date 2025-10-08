@@ -4,6 +4,7 @@ import { useMutation } from "convex/react";
 import type { Doc } from "@/convex/_generated/dataModel";
 
 import { api } from "@/convex/_generated/api";
+import { redis } from "@/lib/index";
 
 interface FormData {
   workspace_name: string;
@@ -81,6 +82,10 @@ export function WorkspaceForm({
           min_revenue_usd: sanitizeNumber(data.min_revenue_usd),
         },
       });
+
+      // Clear the Redis cache for this workspace
+      const cacheKey = `workspace:${data.workspace_name}`;
+      await redis.del(cacheKey);
 
       alert("Workspace updated successfully!");
     } catch (error) {
