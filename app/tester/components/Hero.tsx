@@ -1,4 +1,5 @@
 import { PreviewCard } from "@/app/tester/components/PreviewCard";
+
 export function Hero() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-16 md:py-24">
@@ -9,18 +10,31 @@ export function Hero() {
             Live enrichment & lead qualification for your forms
           </div>
           <h1 className="text-4xl md:text-5xl font-semibold tracking-tight">
-            Turn every form submission into a <span className="underline decoration-emerald-300">scored, enriched lead</span>—in seconds.
+            Turn every form submission into a{" "}
+            <span className="underline decoration-emerald-300">
+              scored, enriched lead
+            </span>
+             {" "} in seconds.
           </h1>
           <p className="mt-5 text-slate-600 text-lg">
-            We enrich company and contact data the moment someone submits your form, apply your
-            qualification rules (employees, revenue, funding, and more), then route qualified leads straight
-            to your booking calendar. Everyone else gets a friendly follow‑up.
+            Instantly enrich company and contact data on form submission, apply
+            your qualification rules, and route qualified leads to your booking
+            calendar.
           </p>
           <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <a href="#contact" className="px-5 py-3 rounded-2xl bg-slate-900 text-white hover:bg-slate-800">Contact Sales</a>
-            <a href="#how" className="px-5 py-3 rounded-2xl border border-slate-200 hover:bg-slate-50">See how it works</a>
+            <a
+              href="#contact"
+              className="px-5 py-3 rounded-2xl bg-slate-900 text-white hover:bg-slate-800"
+            >
+              Contact Sales
+            </a>
+            <a
+              href="#how"
+              className="px-5 py-3 rounded-2xl border border-slate-200 hover:bg-slate-50"
+            >
+              See how it works
+            </a>
           </div>
-          <div className="mt-6 text-xs text-slate-500">SOC 2 friendly • GDPR ready • No code snippet lock‑in</div>
         </div>
         <div className="relative">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

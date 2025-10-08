@@ -63,7 +63,7 @@ function FAQ() {
           </div>
           <div>
             <dt className="font-medium">Can I use my own form?</dt>
-            <dd className="text-slate-600 mt-1">Yes—drop in our snippet or connect providers like Tally, Typeform, Webflow, HubSpot, or your custom backend.</dd>
+            <dd className="text-slate-600 mt-1">Yes - drop in our snippet to connect to Tally, Typeform, or your custom backend.</dd>
           </div>
         </dl>
       </div>
@@ -77,15 +77,13 @@ function SiteFooter() {
       <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-slate-600 flex flex-col md:flex-row items-center md:items-start justify-between gap-4">
         <div className="flex items-center gap-2">
           <div className="size-6 rounded-xl bg-slate-900" />
-          <span className="font-medium">QualiForm</span>
+          <span className="font-medium">AssemblyGTM</span>
         </div>
         <div className="flex gap-6">
           <a href="#" className="hover:text-slate-900">Privacy</a>
-          <a href="#" className="hover:text-slate-900">Security</a>
-          <a href="#" className="hover:text-slate-900">Status</a>
-          <a href="#" className="hover:text-slate-900">Docs</a>
+          <a href="#" className="hover:text-slate-900">Legal</a>
         </div>
-        <div className="text-xs">© {new Date().getFullYear()} QualiForm, Inc.</div>
+        <div className="text-xs">© {new Date().getFullYear()} AssemblyGTM, LLC.</div>
       </div>
     </footer>
   );
