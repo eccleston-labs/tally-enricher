@@ -35,6 +35,24 @@ const CONFIG = {
   },
 };
 
+// Types
+type PriceCardProps = {
+  name: string;
+  price: string;
+  blurb: string;
+  highlight?: boolean;
+};
+
+type TextFieldProps = {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  placeholder?: string;
+  error?: string;
+};
+
 export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900">
@@ -190,10 +208,10 @@ function GoogleButton({ href = "/auth/google" }: { href?: string }) {
       className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
     >
       <svg width="18" height="18" viewBox="0 0 48 48" className="-ml-1" aria-hidden>
-        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.879 32.66 29.387 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657C33.779 6.053 29.136 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.651-.389-3.917z"/>
-        <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.297 16.108 18.799 12 24 12c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657C33.779 6.053 29.136 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
-        <path fill="#4CAF50" d="M24 44c5.304 0 10.102-2.037 13.73-5.343l-6.343-5.366C29.345 34.723 26.833 36 24 36c-5.364 0-9.877-3.356-11.29-8.017l-6.58 5.065C9.45 39.556 16.12 44 24 44z"/>
-        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-1.36 3.66-4.682 6.343-8.303 6.343-5.364 0-9.877-3.356-11.29-8.017l-6.58 5.065C9.45 39.556 16.12 44 24 44c8.837 0 16-7.163 16-16 0-1.341-.138-2.651-.389-3.917z"/>
+        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.879 32.66 29.387 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657C33.779 6.053 29.136 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.651-.389-3.917z" />
+        <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.297 16.108 18.799 12 24 12c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657C33.779 6.053 29.136 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
+        <path fill="#4CAF50" d="M24 44c5.304 0 10.102-2.037 13.73-5.343l-6.343-5.366C29.345 34.723 26.833 36 24 36c-5.364 0-9.877-3.356-11.29-8.017l-6.58 5.065C9.45 39.556 16.12 44 24 44z" />
+        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-1.36 3.66-4.682 6.343-8.303 6.343-5.364 0-9.877-3.356-11.29-8.017l-6.58 5.065C9.45 39.556 16.12 44 24 44c8.837 0 16-7.163 16-16 0-1.341-.138-2.651-.389-3.917z" />
       </svg>
       Continue with Google
     </a>
@@ -229,10 +247,20 @@ function QualifyForm() {
     return active.join(" • ");
   }, []);
 
-  function onChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    const { name, value, type, checked } = e.target as any;
-    setValues((v) => ({ ...v, [name]: type === "checkbox" ? checked : value }));
+  function onChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) {
+    const { name, value, type } = e.target;
+
+    setValues((v) => ({
+      ...v,
+      [name]: type === "checkbox"
+        ? (e.target as HTMLInputElement).checked
+        : value,
+    }));
   }
+
+
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -322,7 +350,7 @@ function QualifyForm() {
             <TextField label="Total funding (USD)" name="fundingUSD" type="number" placeholder="e.g. 100000000" value={values.fundingUSD} onChange={onChange} />
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-slate-700">Use case</label>
-              <textarea name="useCase" value={values.useCase} onChange={onChange} rows={3} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900/10" placeholder="Tell us what you’re trying to automate…"/>
+              <textarea name="useCase" value={values.useCase} onChange={onChange} rows={3} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900/10" placeholder="Tell us what you’re trying to automate…" />
             </div>
             <div className="sm:col-span-2 flex items-start gap-2 mt-1">
               <input id="accept" name="accept" type="checkbox" checked={values.accept} onChange={onChange} className="mt-1 size-4 rounded border-slate-300" />
@@ -366,7 +394,7 @@ function QualifyForm() {
   );
 }
 
-function TextField({ label, name, value, onChange, type = "text", placeholder, error }: any) {
+function TextField({ label, name, value, onChange, type = "text", placeholder, error }: TextFieldProps) {
   return (
     <div>
       <label className="block text-sm font-medium text-slate-700">{label}</label>
@@ -376,16 +404,15 @@ function TextField({ label, name, value, onChange, type = "text", placeholder, e
         onChange={onChange}
         type={type}
         placeholder={placeholder}
-        className={`mt-1 w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900/10 ${
-          error ? "border-red-400" : "border-slate-300"
-        }`}
+        className={`mt-1 w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900/10 ${error ? "border-red-400" : "border-slate-300"
+          }`}
       />
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }
 
-function PriceCard({ name, price, blurb, highlight = false }: any) {
+function PriceCard({ name, price, blurb, highlight = false }: PriceCardProps) {
   return (
     <div className={`rounded-2xl border p-4 ${highlight ? "border-slate-900 bg-slate-50" : "border-slate-200 bg-white"}`}>
       <div className="flex items-baseline justify-between">
