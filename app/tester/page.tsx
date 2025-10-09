@@ -37,7 +37,7 @@ export default function App() {
       <TrustLogos />
       <MainSections />
       <QualifyForm />
-      <FAQ />
+      {/* <FAQ /> */}
       <SiteFooter />
     </div>
   );
