@@ -126,13 +126,6 @@ export default function CompetitorTable() {
                     </tbody>
                 </table>
             </div>
-
-            <p className="mt-3 text-xs text-slate-500">
-                Legend: <span className="text-emerald-600 font-semibold">✓ yes</span>{" "}
-                <span className="text-amber-600 font-semibold">◐ partial/depends</span>{" "}
-                <span className="text-slate-400 font-semibold">— not typical</span>.
-                Please verify details before publishing.
-            </p>
         </section>
     );
 }
