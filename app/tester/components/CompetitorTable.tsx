@@ -102,7 +102,7 @@ function Cell({ v }: { v: Support }) {
 
 export default function CompetitorTable() {
     return (
-        <section className="mx-auto max-w-6xl px-4 py-12">
+        <section className="mx-auto max-w-6xl px-4 pb-12">
             <h3 className="text-xl font-semibold mb-4">Compare alternatives</h3>
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <table className="min-w-full text-sm">
