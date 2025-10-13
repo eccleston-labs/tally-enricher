@@ -1,14 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { useMutation } from "convex/react";
-import type { Doc } from "@/convex/_generated/dataModel";
-
 import { api } from "@/convex/_generated/api";
-import { redis } from "@/lib/index";
 import { WorkspaceConfigForm } from "./WorkspaceConfigForm";
 import { WorkspaceCriteriaForm } from "./WorkspaceCriteriaForm";
-import { IntegrationSnippet } from "@/components/form/integration-snippet";
-import { QualificationForm } from "@/components/form/qualification-form";
+import { IntegrationSnippet } from "./integration-snippet";
+import { QualificationForm } from "./qualification-form";
 
 interface FormData {
   workspace_name: string;
@@ -25,10 +22,12 @@ export function OnboardingForm({
   initialData,
 }: {
   setWorkspaceName: (name: string) => void;
-  initialData?: Doc<"Workspaces"> | null;
+  initialData?: any;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
   const createWorkspace = useMutation(api.workspaces.create);
   const updateWorkspace = useMutation(api.workspaces.update);
 
@@ -38,35 +37,21 @@ export function OnboardingForm({
       form_provider: "",
       booking_url: "",
       success_page_url: "",
+      min_employees: undefined,
+      min_funding_usd: undefined,
+      min_revenue_usd: undefined,
     },
   });
 
-  // Pre-populate form when initialData changes
-  useEffect(() => {
-    if (initialData) {
-      methods.reset({
-        workspace_name: initialData.workspace_name,
-        form_provider: initialData.form_provider,
-        booking_url: initialData.booking_url,
-        success_page_url: initialData.success_page_url,
-        min_employees: initialData.criteria?.min_employees || 400,
-        min_funding_usd: initialData.criteria?.min_funding_usd || 100000000,
-        min_revenue_usd: initialData.criteria?.min_revenue_usd || 50000000,
-      });
-    }
-  }, [initialData, methods]);
-
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
+    setWorkspaceName(data.workspace_name);
 
     function sanitizeNumber(n: unknown, fallback = 10000) {
       // Accepts string or number, returns number or fallback.
       const num = typeof n === "number" ? n : Number(n);
       return typeof num === "number" && !isNaN(num) ? num : fallback;
     }
-
-    // Set workspace name in parent state
-    setWorkspaceName(data.workspace_name);
 
     try {
       if (initialData) {
@@ -94,12 +79,8 @@ export function OnboardingForm({
           },
         });
       }
-
-      // Clear the Redis cache for this workspace
-      // const cacheKey = `workspace:${data.workspace_name}`;
-      // await redis.del(cacheKey);
-
-      alert("Workspace saved successfully!");
+      setHasSubmitted(true);
+      setStep(3);
     } catch (error) {
       alert("Error saving workspace: " + (error as Error).message);
     } finally {
@@ -107,15 +88,21 @@ export function OnboardingForm({
     }
   };
 
-  const appUrl = "https://example.com";
+  const handleNext = async () => {
+    if (step === 2) {
+      if (hasSubmitted) {
+        setStep(3);
+      } else {
+        await methods.handleSubmit(onSubmit)();
+      }
+    } else {
+      setStep((prev) => (prev === 1 ? 2 : prev));
+    }
+  };
 
   return (
     <FormProvider {...methods}>
-      <form
-        onSubmit={methods.handleSubmit(onSubmit)}
-        className="space-y-4"
-        autoComplete="off"
-      >
+      <form className="space-y-4" autoComplete="off">
         {step === 1 && (
           <>
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
@@ -151,12 +138,9 @@ export function OnboardingForm({
                 type="button"
                 disabled={isSubmitting}
                 className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                onClick={methods.handleSubmit(async (data) => {
-                  await onSubmit(data);
-                  setStep(3);
-                })}
+                onClick={handleNext}
               >
-                {isSubmitting ? "Updating..." : "Next"}
+                {isSubmitting ? "Saving..." : "Next"}
               </button>
             </div>
           </>
@@ -173,7 +157,7 @@ export function OnboardingForm({
                 </label>
                 <IntegrationSnippet
                   workspaceName={methods.getValues("workspace_name")}
-                  appUrl={appUrl}
+                  appUrl="https://example.com"
                 />
               </div>
               <div>
