@@ -7,6 +7,8 @@ import { WorkspaceCriteriaForm } from "./WorkspaceCriteriaForm";
 import { IntegrationSnippet } from "./integration-snippet";
 import { QualificationForm } from "./qualification-form";
 
+import type { Doc } from "@/convex/_generated/dataModel";
+
 interface FormData {
   workspace_name: string;
   form_provider: string;
@@ -22,7 +24,7 @@ export function OnboardingForm({
   initialData,
 }: {
   setWorkspaceName: (name: string) => void;
-  initialData?: any;
+  initialData?: Doc<"Workspaces"> | null;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
