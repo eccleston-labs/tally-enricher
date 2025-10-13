@@ -7,6 +7,8 @@ import { api } from "@/convex/_generated/api";
 import { redis } from "@/lib/index";
 import { WorkspaceConfigForm } from "./WorkspaceConfigForm";
 import { WorkspaceCriteriaForm } from "./WorkspaceCriteriaForm";
+import { IntegrationSnippet } from "@/components/form/integration-snippet";
+import { QualificationForm } from "@/components/form/qualification-form";
 
 interface FormData {
   workspace_name: string;
@@ -18,7 +20,7 @@ interface FormData {
   min_revenue_usd: number;
 }
 
-export function WorkspaceForm({
+export function OnboardingForm({
   setWorkspaceName,
   initialData,
 }: {
@@ -26,7 +28,7 @@ export function WorkspaceForm({
   initialData?: Doc<"Workspaces"> | null;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const createWorkspace = useMutation(api.workspaces.create);
   const updateWorkspace = useMutation(api.workspaces.update);
 
@@ -105,6 +107,8 @@ export function WorkspaceForm({
     }
   };
 
+  const appUrl = "https://example.com";
+
   return (
     <FormProvider {...methods}>
       <form
@@ -144,11 +148,48 @@ export function WorkspaceForm({
                 Back
               </button>
               <button
-                type="submit"
+                type="button"
                 disabled={isSubmitting}
                 className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                onClick={methods.handleSubmit(async (data) => {
+                  await onSubmit(data);
+                  setStep(3);
+                })}
               >
-                {isSubmitting ? "Updating..." : "Save Workspace"}
+                {isSubmitting ? "Updating..." : "Next"}
+              </button>
+            </div>
+          </>
+        )}
+        {step === 3 && (
+          <>
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              3. Instructions
+            </h2>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Example integration snippet
+                </label>
+                <IntegrationSnippet
+                  workspaceName={methods.getValues("workspace_name")}
+                  appUrl={appUrl}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Check Lead Qualification
+                </label>
+                <QualificationForm workspaceName={methods.getValues("workspace_name")} />
+              </div>
+            </div>
+            <div className="flex justify-start mt-6">
+              <button
+                type="button"
+                className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300"
+                onClick={() => setStep(2)}
+              >
+                Back
               </button>
             </div>
           </>

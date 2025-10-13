@@ -8,7 +8,7 @@ import "../globals.css";
 import {
   IntegrationSnippet,
   QualificationForm,
-  WorkspaceForm,
+  OnboardingForm,
 } from "@/components/form";
 import { api } from "@/convex/_generated/api";
 
@@ -130,7 +130,7 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     )}
-                    <WorkspaceForm
+                    <OnboardingForm
                       setWorkspaceName={setWorkspaceName}
                       initialData={existingWorkspace}
                     />
