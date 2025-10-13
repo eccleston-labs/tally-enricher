@@ -5,8 +5,7 @@ export function QualificationForm({ workspaceName }: { workspaceName: string }) 
   const [result, setResult] = useState<null | boolean>(null);
   const [isChecking, setIsChecking] = useState(false);
 
-  async function onCheck(e: React.FormEvent) {
-    e.preventDefault();
+  async function onCheck() {
     setIsChecking(true);
     try {
       const res = await fetch("/api/qualify", {
@@ -22,8 +21,15 @@ export function QualificationForm({ workspaceName }: { workspaceName: string }) 
     setIsChecking(false);
   }
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (email && !isChecking) onCheck();
+    }
+  }
+
   return (
-    <form onSubmit={onCheck} className="flex flex-col gap-2 max-w-sm">
+    <div className="flex flex-col gap-2 max-w-sm">
       <div className="flex gap-2">
         <input
           type="email"
@@ -35,12 +41,14 @@ export function QualificationForm({ workspaceName }: { workspaceName: string }) 
             setEmail(e.target.value);
             setResult(null);
           }}
+          onKeyDown={handleKeyDown}
           className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />
         <button
-          type="submit"
+          type="button"
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm disabled:opacity-60"
           disabled={isChecking || !email}
+          onClick={onCheck}
         >
           {isChecking ? "Checking..." : "Check"}
         </button>
@@ -52,6 +60,6 @@ export function QualificationForm({ workspaceName }: { workspaceName: string }) 
           {result ? "Qualified ✅" : "Not qualified ❌"}
         </div>
       )}
-    </form>
+    </div>
   );
 }

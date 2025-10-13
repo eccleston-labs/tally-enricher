@@ -58,3 +58,26 @@ export const update = mutation({
     return workspace._id;
   },
 });
+
+export const create = mutation({
+  args: {
+    workspace_name: v.string(),
+    form_provider: v.string(),
+    booking_url: v.string(),
+    success_page_url: v.string(),
+    criteria: v.object({
+      min_employees: v.number(),
+      min_funding_usd: v.number(),
+      min_revenue_usd: v.number(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("Workspaces", {
+      workspace_name: args.workspace_name,
+      form_provider: args.form_provider,
+      booking_url: args.booking_url,
+      success_page_url: args.success_page_url,
+      criteria: args.criteria,
+    });
+  },
+});

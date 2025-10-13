@@ -1,5 +1,5 @@
 import { IntegrationSnippet } from "./integration-snippet";
 import { QualificationForm } from "./qualification-form";
-import { WorkspaceForm } from "./workspace-form";
+import { OnboardingForm } from "./onboarding-form";
 
-export { IntegrationSnippet, QualificationForm, WorkspaceForm };
+export { IntegrationSnippet, QualificationForm, OnboardingForm };
