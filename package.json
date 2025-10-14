@@ -9,10 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@auth/core": "^0.37.0",
     "@clerk/clerk-react": "^5.51.0",
     "@clerk/nextjs": "^6.33.3",
-    "@convex-dev/auth": "^0.0.90",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.4",
     "@upstash/redis": "^1.35.3",
