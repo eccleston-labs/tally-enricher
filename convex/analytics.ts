@@ -13,6 +13,12 @@ export const insert = mutation({
       reason: v.string(),
     }),
     ts: v.number(),
+
+    employees: v.optional(v.number()),
+    funding: v.optional(v.number()),
+    sector: v.optional(v.string()),
+    size: v.optional(v.string()),
+    // revenue: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("Analytics", args);

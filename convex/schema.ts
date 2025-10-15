@@ -14,7 +14,6 @@ export default defineSchema({
       min_revenue_usd: v.optional(v.number()),
     }),
   })
-    // for uniqueness checks at write time
     .index("by_name", ["workspace_name"]),
 
   Analytics: defineTable({
@@ -27,7 +26,14 @@ export default defineSchema({
       reason: v.string(),
     }),
     ts: v.number(),
+
+    employees: v.optional(v.number()),
+    funding: v.optional(v.number()),
+    sector: v.optional(v.string()),   // sector/type
+    size: v.optional(v.string()),   // e.g. "1001-5000"
+    revenue: v.optional(v.number()), // Not yet used
   }),
+
 
   Users: defineTable({
     subject: v.string(),                 // stable auth subject from Clerk
