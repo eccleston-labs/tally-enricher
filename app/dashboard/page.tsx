@@ -4,6 +4,7 @@ import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { SignInButton } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import { ConfigForm } from "@/components/ConfigForm";
+import { IntegrationSnippet } from "@/components/form/integration-snippet";
 
 const SIDEBAR_ITEMS = [
   { key: "summary", label: "Summary" },
@@ -73,8 +74,8 @@ function DashboardAuthed() {
             <button
               key={item.key}
               className={`w-full text-left px-4 py-2 rounded-md transition ${activeView === item.key
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-700 hover:bg-gray-100"
+                ? "bg-blue-600 text-white"
+                : "text-gray-700 hover:bg-gray-100"
                 }`}
               onClick={() => setActiveView(item.key)}
             >
@@ -167,16 +168,37 @@ function DashboardAuthed() {
         )}
 
         {activeView === "config" && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Workspace Configuration</h2>
+          <>
+            <div className="bg-white rounded-lg shadow p-6 space-y-8">
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Workspace Configuration</h2>
+                {meLoading ? (
+                  <p className="text-gray-500">Loading workspace…</p>
+                ) : me?.workspace ? (
+                  <ConfigForm workspace={me.workspace} />
+                ) : (
+                  <p className="text-gray-500">No workspace found</p>
+                )}
+              </div>
+            </div>
 
-            {meLoading ? (
-              <p className="text-gray-500">Loading workspace…</p>
-            ) : me?.workspace ? (
-              <ConfigForm workspace={me.workspace} />
-            ) : (
-              <p className="text-gray-500">No workspace found</p>
-            )}
+            <div className="bg-white rounded-lg shadow p-6 space-y-8 mt-8">
+              <h2 className="text-xl font-semibold mb-4">Link</h2>
+              {me?.workspace ? (
+                <IntegrationSnippet
+                  workspaceName={me.workspace.workspace_name}
+                  appUrl="https://tally-enricher.vercel.app"
+                />
+              ) : (
+                <p className="text-gray-500">No workspace available for snippet</p>
+              )}
+            </div>
+          </>
+        )}
+
+        {activeView === "settings" && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Nothing here yet</h2>
           </div>
         )}
 
