@@ -4,11 +4,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { WorkspaceConfigForm } from "./WorkspaceConfigForm";
 import { WorkspaceCriteriaForm } from "./WorkspaceCriteriaForm";
-import { IntegrationSnippet } from "./integration-snippet";
-import { QualificationForm } from "./qualification-form";
 import { useRouter } from "next/navigation";
-
-import type { Doc } from "@/convex/_generated/dataModel";
 
 interface FormData {
   workspace_name: string;
@@ -22,18 +18,14 @@ interface FormData {
 
 export function OnboardingForm({
   setWorkspaceName,
-  initialData,
 }: {
   setWorkspaceName: (name: string) => void;
-  initialData?: Doc<"Workspaces"> | null;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
   const router = useRouter();
 
-  const createWorkspace = useMutation(api.workspaces.create);
-  const updateWorkspace = useMutation(api.workspaces.update);
+  const createAndLink = useMutation(api.workspaces.createAndLink);
 
   const methods = useForm<FormData>({
     defaultValues: {
@@ -52,61 +44,39 @@ export function OnboardingForm({
     setWorkspaceName(data.workspace_name);
 
     function sanitizeNumber(n: unknown, fallback = 10000) {
-      // Accepts string or number, returns number or fallback.
       const num = typeof n === "number" ? n : Number(n);
       return typeof num === "number" && !isNaN(num) ? num : fallback;
     }
 
     try {
-      if (initialData) {
-        await updateWorkspace({
-          workspace_name: data.workspace_name,
-          form_provider: data.form_provider,
-          booking_url: data.booking_url,
-          success_page_url: data.success_page_url,
-          criteria: {
-            min_employees: sanitizeNumber(data.min_employees),
-            min_funding_usd: sanitizeNumber(data.min_funding_usd),
-            min_revenue_usd: sanitizeNumber(data.min_revenue_usd),
-          },
-        });
-      } else {
-        await createWorkspace({
-          workspace_name: data.workspace_name,
-          form_provider: data.form_provider,
-          booking_url: data.booking_url,
-          success_page_url: data.success_page_url,
-          criteria: {
-            min_employees: sanitizeNumber(data.min_employees),
-            min_funding_usd: sanitizeNumber(data.min_funding_usd),
-            min_revenue_usd: sanitizeNumber(data.min_revenue_usd),
-          },
-        });
-      }
-      setHasSubmitted(true);
-      setStep(3);
+      await createAndLink({
+        workspace_name: data.workspace_name,
+        form_provider: data.form_provider,
+        booking_url: data.booking_url,
+        success_page_url: data.success_page_url,
+        criteria: {
+          min_employees: sanitizeNumber(data.min_employees),
+          min_funding_usd: sanitizeNumber(data.min_funding_usd),
+          min_revenue_usd: sanitizeNumber(data.min_revenue_usd),
+        },
+      });
+
+      // 🚀 Jump straight to dashboard (Setup tab will guide them)
+      router.push("/dashboard");
     } catch (error) {
-      alert("Error saving workspace: " + (error as Error).message);
+      alert("Error creating workspace: " + (error as Error).message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleNext = async () => {
-    if (step === 2) {
-      if (hasSubmitted) {
-        setStep(3);
-      } else {
-        await methods.handleSubmit(onSubmit)();
-      }
-    } else {
-      setStep((prev) => (prev === 1 ? 2 : prev));
-    }
-  };
-
   return (
     <FormProvider {...methods}>
-      <form className="space-y-4" autoComplete="off">
+      <form
+        className="space-y-4"
+        autoComplete="off"
+        onSubmit={methods.handleSubmit(onSubmit)}
+      >
         {step === 1 && (
           <>
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
@@ -124,6 +94,7 @@ export function OnboardingForm({
             </div>
           </>
         )}
+
         {step === 2 && (
           <>
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
@@ -139,52 +110,11 @@ export function OnboardingForm({
                 Back
               </button>
               <button
-                type="button"
+                type="submit"
                 disabled={isSubmitting}
                 className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                onClick={handleNext}
               >
-                {isSubmitting ? "Saving..." : "Next"}
-              </button>
-            </div>
-          </>
-        )}
-        {step === 3 && (
-          <>
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              3. Instructions
-            </h2>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Example integration snippet
-                </label>
-                <IntegrationSnippet
-                  workspaceName={methods.getValues("workspace_name")}
-                  appUrl="https://example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Check Lead Qualification
-                </label>
-                <QualificationForm workspaceName={methods.getValues("workspace_name")} />
-              </div>
-            </div>
-            <div className="flex justify-between mt-6">
-              <button
-                type="button"
-                className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300"
-                onClick={() => setStep(2)}
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-                onClick={() => router.push("/dashboard")}
-              >
-                Next
+                {isSubmitting ? "Saving…" : "Finish"}
               </button>
             </div>
           </>
