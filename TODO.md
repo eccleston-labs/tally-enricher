@@ -6,4 +6,4 @@ GABE TO DO:
 - Indices on analytics for faster look up later.
 - Add more to analytics table
 
-<!-- ?email=gabe@microsoft.com&workspace_name=GabeTest -->
+?email=gabe@microsoft.com&workspace_name=GabeTest

@@ -104,35 +104,35 @@ export default async function HomePage({
   const analyticsStart = performance.now();
 
   // if (process.env.NODE_ENV !== "development") {
-  if (workspaceName === "granola") {
-    console.log("running");
-    const res = await fetch(GRANOLA_SLACK_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        text: fieldsStr,
-      }),
-    });
-    console.log(res.status);
-    const data = await res.text();
-    console.log({ data });
-  }
-  fetchMutation(api.analytics.insert, {
-    event: "lead_qualification",
-    email: emailFormatted, // probably better than the raw encoded
-    domain,
-    workspaceName,
-    qualified,
-    ts: Date.now(),
+    if (workspaceName === "granola") {
+      console.log("running");
+      const res = await fetch(GRANOLA_SLACK_URL, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          text: fieldsStr,
+        }),
+      });
+      console.log(res.status);
+      const data = await res.text();
+      console.log({ data });
+    }
+    fetchMutation(api.analytics.insert, {
+      event: "lead_qualification",
+      email: emailFormatted, // probably better than the raw encoded
+      domain,
+      workspaceName,
+      qualified,
+      ts: Date.now(),
 
-    employees: enrichmentData.employees ?? undefined,
-    funding: enrichmentData.funding ?? undefined,
-    sector: enrichmentData.sector ?? undefined,
-    size: enrichmentData.size ?? undefined,
-    // revenue: enrichmentData.revenue,
-  }).catch(() => { });
+      employees: enrichmentData.employees ?? undefined,
+      funding: enrichmentData.funding ?? undefined,
+      sector: enrichmentData.sector ?? undefined,
+      size: enrichmentData.size ?? undefined,
+      // revenue: enrichmentData.revenue,
+    }).catch(() => { });
   // }
   const analyticsTime = performance.now() - analyticsStart;
 

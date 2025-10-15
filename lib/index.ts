@@ -61,7 +61,7 @@ export async function enrichDomain(
     }
 
     const data = await response.json();
-    console.log("PDL API response:", data);
+    // console.log("PDL API response:", data);
 
     const enriched = {
       name: data?.display_name ?? data?.name ?? null,
@@ -70,7 +70,7 @@ export async function enrichDomain(
       size: data?.size ?? null,
       sector: [data?.industry, data?.industry_v2]
         .filter(Boolean)             // remove wonky nulls
-        .join(" | ") || null,
+        .join(", ") || null,
       // revenue: data?.annual_revenue ?? null,
     };
     console.log(`PDL enrichment for ${domain}:`, enriched);
