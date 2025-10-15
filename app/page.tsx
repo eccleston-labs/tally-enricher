@@ -12,9 +12,6 @@ import {
 const GRANOLA_SLACK_URL =
   "https://hooks.slack.com/services/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";
 
-const SUCCESS_REDIRECT = "https://cal.com/dom-eccleston/30min";
-const DISQUALIFY_REDIRECT = "https://granola.ai/";
-
 export default async function HomePage({
   searchParams,
 }: {
@@ -41,11 +38,11 @@ export default async function HomePage({
         });
       }
     }
-    redirect(DISQUALIFY_REDIRECT);
+    // fallback redirect if no workspace info available
+    redirect("https://example.com/error");
   }
 
   const emailFormatted = decodeURIComponent(email);
-  console.log(emailFormatted);
   const domain = extractDomainFromEmail(emailFormatted);
 
   if (!domain) {
@@ -62,16 +59,14 @@ export default async function HomePage({
         });
       }
     }
-    redirect(DISQUALIFY_REDIRECT);
+    redirect("https://example.com/error");
   }
 
   // Profile parallel API calls
-  const apiStart = performance.now();
   const [workspace, enrichmentData] = await Promise.all([
     getWorkspaceWithCache(workspaceName),
     enrichDomain(domain),
   ]);
-  const apiTime = performance.now() - apiStart;
 
   if (!workspace) {
     if (process.env.NODE_ENV !== "development") {
@@ -87,7 +82,7 @@ export default async function HomePage({
         });
       }
     }
-    redirect(DISQUALIFY_REDIRECT);
+    redirect("https://example.com/error");
   }
 
   const qualified = qualifyLead(enrichmentData, workspace.criteria);
@@ -101,46 +96,45 @@ export default async function HomePage({
   });
 
   // Non-blocking analytics: don't await!
-  const analyticsStart = performance.now();
-
-  // if (process.env.NODE_ENV !== "development") {
+  if (process.env.NODE_ENV !== "development") {
     if (workspaceName === "granola") {
-      console.log("running");
-      const res = await fetch(GRANOLA_SLACK_URL, {
+      await fetch(GRANOLA_SLACK_URL, {
         method: "POST",
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({
-          text: fieldsStr,
-        }),
+        body: JSON.stringify({ text: fieldsStr }),
       });
-      console.log(res.status);
-      const data = await res.text();
-      console.log({ data });
     }
-    fetchMutation(api.analytics.insert, {
-      event: "lead_qualification",
-      email: emailFormatted, // probably better than the raw encoded
-      domain,
-      workspaceName,
-      qualified,
-      ts: Date.now(),
-
-      employees: enrichmentData.employees ?? undefined,
-      funding: enrichmentData.funding ?? undefined,
-      sector: enrichmentData.sector ?? undefined,
-      size: enrichmentData.size ?? undefined,
-      // revenue: enrichmentData.revenue,
-    }).catch(() => { });
-  // }
-  const analyticsTime = performance.now() - analyticsStart;
-
-  const totalTime = performance.now() - startTime;
-
-  if (qualified.result) {
-    redirect(SUCCESS_REDIRECT);
   }
 
-  redirect(DISQUALIFY_REDIRECT);
+  fetchMutation(api.analytics.insert, {
+    event: "lead_qualification",
+    email: emailFormatted,
+    domain,
+    workspaceName,
+    qualified,
+    ts: Date.now(),
+
+    employees: enrichmentData.employees ?? undefined,
+    funding: enrichmentData.funding ?? undefined,
+    sector: enrichmentData.sector ?? undefined,
+    size: enrichmentData.size ?? undefined,
+  }).catch(() => { });
+
+  // func for dev when url is localhost (http)
+  function normalizeUrl(url: string | undefined, fallback: string) {
+    if (!url) return fallback;
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    return `https://${url}`;
+  }
+
+  // ✅ dynamic redirects
+  const successUrl = normalizeUrl(workspace.booking_url, "https://example.com/success");
+  const disqualifyUrl = normalizeUrl(workspace.success_page_url, "https://example.com/disqualify");
+
+  if (qualified.result) {
+    redirect(successUrl);
+  }
+  redirect(disqualifyUrl);
 }

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { SignInButton } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
+import { ConfigForm } from "@/components/ConfigForm";
 
 const SIDEBAR_ITEMS = [
   { key: "summary", label: "Summary" },
@@ -71,11 +72,10 @@ function DashboardAuthed() {
           {SIDEBAR_ITEMS.map((item) => (
             <button
               key={item.key}
-              className={`w-full text-left px-4 py-2 rounded-md transition ${
-                activeView === item.key
+              className={`w-full text-left px-4 py-2 rounded-md transition ${activeView === item.key
                   ? "bg-blue-600 text-white"
                   : "text-gray-700 hover:bg-gray-100"
-              }`}
+                }`}
               onClick={() => setActiveView(item.key)}
             >
               {item.label}
@@ -100,15 +100,15 @@ function DashboardAuthed() {
                 summaryLoading
                   ? "Avg. Company Size"
                   : summary?.omissions && summary.omissions > 0
-                  ? `Avg. Company Size (${summary.omissions} omitted)`
-                  : "Avg. Company Size"
+                    ? `Avg. Company Size (${summary.omissions} omitted)`
+                    : "Avg. Company Size"
               }
               value={
                 summaryLoading
                   ? "…"
                   : summary?.avgEmployees != null
-                  ? summary.avgEmployees.toLocaleString()
-                  : "No data"
+                    ? summary.avgEmployees.toLocaleString()
+                    : "No data"
               }
             />
           </div>
@@ -131,15 +131,15 @@ function DashboardAuthed() {
                   {insightsLoading
                     ? "Loading…"
                     : insights?.avgQualifiedEmployees != null
-                    ? `Average company size of qualified lead was ${insights.avgQualifiedEmployees.toLocaleString()}`
-                    : "Average company size of qualified lead: No data"}
+                      ? `Average company size of qualified lead was ${insights.avgQualifiedEmployees.toLocaleString()}`
+                      : "Average company size of qualified lead: No data"}
                 </li>
                 <li>
                   {insightsLoading
                     ? "Loading…"
                     : insights?.mostCommonSector
-                    ? `Most common vertical was ${insights.mostCommonSector}`
-                    : "Most common vertical: No data"}
+                      ? `Most common vertical was ${insights.mostCommonSector}`
+                      : "Most common vertical: No data"}
                 </li>
                 <li>
                   {insightsLoading
@@ -165,6 +165,21 @@ function DashboardAuthed() {
             </div>
           </div>
         )}
+
+        {activeView === "config" && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Workspace Configuration</h2>
+
+            {meLoading ? (
+              <p className="text-gray-500">Loading workspace…</p>
+            ) : me?.workspace ? (
+              <ConfigForm workspace={me.workspace} />
+            ) : (
+              <p className="text-gray-500">No workspace found</p>
+            )}
+          </div>
+        )}
+
       </main>
     </div>
   );

@@ -22,7 +22,8 @@ export const getByName = query({
 
 export const update = mutation({
   args: {
-    workspace_name: v.string(),
+    workspace_name: v.string(), // original name
+    new_workspace_name: v.optional(v.string()), // new name if changed
     booking_url: v.optional(v.string()),
     success_page_url: v.optional(v.string()),
     form_provider: v.optional(v.string()),
@@ -34,23 +35,32 @@ export const update = mutation({
       }),
     ),
   },
-  handler: async (ctx, { workspace_name, ...updates }) => {
-    // First, find the workspace by name to get its ID
+  handler: async (ctx, { workspace_name, new_workspace_name, ...updates }) => {
     const workspace = await ctx.db
       .query("Workspaces")
-      .filter((q) => q.eq(q.field("workspace_name"), workspace_name))
-      .first();
+      .withIndex("by_name", (q) => q.eq("workspace_name", workspace_name))
+      .unique();
 
-    if (!workspace) {
-      throw new Error(`Workspace "${workspace_name}" not found`);
+    if (!workspace) throw new Error(`Workspace "${workspace_name}" not found`);
+
+    const cleanUpdates: Record<string, unknown> = {
+      ...Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined)),
+    };
+
+    if (new_workspace_name) {
+      cleanUpdates.workspace_name = new_workspace_name;
+
+      // Cascade update analytics rows too
+      const analytics = await ctx.db
+        .query("Analytics")
+        .withIndex("by_workspaceName", (q) => q.eq("workspaceName", workspace_name))
+        .collect();
+
+      for (const a of analytics) {
+        await ctx.db.patch(a._id, { workspaceName: new_workspace_name });
+      }
     }
 
-    // Filter out undefined values
-    const cleanUpdates = Object.fromEntries(
-      Object.entries(updates).filter(([, value]) => value !== undefined),
-    );
-
-    // Only patch if there are actual updates
     if (Object.keys(cleanUpdates).length > 0) {
       await ctx.db.patch(workspace._id, cleanUpdates);
     }
