@@ -29,11 +29,10 @@ export default defineSchema({
 
     employees: v.optional(v.number()),
     funding: v.optional(v.number()),
-    sector: v.optional(v.string()),   // sector/type
-    size: v.optional(v.string()),   // e.g. "1001-5000"
-    revenue: v.optional(v.number()), // Not yet used
-  }),
-
+    sector: v.optional(v.string()),
+    size: v.optional(v.string()),
+  })
+    .index("by_workspaceName", ["workspaceName"]),
 
   Users: defineTable({
     subject: v.string(),                 // stable auth subject from Clerk
