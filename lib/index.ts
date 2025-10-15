@@ -55,20 +55,23 @@ export async function enrichDomain(
         name: null,
         employees: null,
         funding: null,
-        type: null,
+        sector: null,
         size: null,
       };
     }
 
     const data = await response.json();
-    console.log("PDL API response:", data);
+    // console.log("PDL API response:", data);
 
     const enriched = {
-      name: data?.name ?? null,
+      name: data?.display_name ?? data?.name ?? null,
       employees: data?.employee_count ?? null,
       funding: data?.total_funding_raised ?? null,
-      type: data?.type ?? null,
       size: data?.size ?? null,
+      sector: [data?.industry, data?.industry_v2]
+        .filter(Boolean)             // remove wonky nulls
+        .join(", ") || null,
+      // revenue: data?.annual_revenue ?? null,
     };
     console.log(`PDL enrichment for ${domain}:`, enriched);
     await redis.set(cacheKey, JSON.stringify(enriched), { ex: expiry });
@@ -79,7 +82,7 @@ export async function enrichDomain(
       name: null,
       employees: null,
       funding: null,
-      type: null,
+      sector: null,
       size: null,
     };
   }
@@ -93,14 +96,8 @@ export function qualifyLead(
   if (!enrichmentData || !criteria)
     return { result: false, reason: "missing_data" };
 
-  const { employees, funding, type, size } = enrichmentData;
+  const { employees, funding, sector, size } = enrichmentData;
   const { min_employees, min_funding_usd } = criteria;
-
-  // Auto-qualify public companies
-  if (type === "public") return { result: true, reason: "public" };
-
-  // Auto-qualify by size bucket
-  if (size === "10001+") return { result: true, reason: "size" };
 
   // Check employee threshold
   if (employees && min_employees && employees >= min_employees)

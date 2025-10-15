@@ -13,7 +13,9 @@ export default defineSchema({
       min_funding_usd: v.optional(v.number()),
       min_revenue_usd: v.optional(v.number()),
     }),
-  }),
+  })
+    .index("by_name", ["workspace_name"]),
+
   Analytics: defineTable({
     event: v.string(),
     email: v.string(),
@@ -24,5 +26,25 @@ export default defineSchema({
       reason: v.string(),
     }),
     ts: v.number(),
+
+    employees: v.optional(v.number()),
+    funding: v.optional(v.number()),
+    sector: v.optional(v.string()),   // sector/type
+    size: v.optional(v.string()),   // e.g. "1001-5000"
+    revenue: v.optional(v.number()), // Not yet used
   }),
+
+
+  Users: defineTable({
+    subject: v.string(),                 // stable auth subject from Clerk
+    email: v.optional(v.string()),
+    name: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    // Relational link to a workspace (one-to-many). Make required if every user must belong.
+    workspaceId: v.optional(v.id("Workspaces")),
+  })
+    .index("by_subject", ["subject"])
+    .index("by_workspace", ["workspaceId"]), // list users in a workspace fast
 });

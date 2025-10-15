@@ -6,6 +6,7 @@ import { WorkspaceConfigForm } from "./WorkspaceConfigForm";
 import { WorkspaceCriteriaForm } from "./WorkspaceCriteriaForm";
 import { IntegrationSnippet } from "./integration-snippet";
 import { QualificationForm } from "./qualification-form";
+import { useRouter } from "next/navigation";
 
 import type { Doc } from "@/convex/_generated/dataModel";
 
@@ -29,6 +30,7 @@ export function OnboardingForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const router = useRouter();
 
   const createWorkspace = useMutation(api.workspaces.create);
   const updateWorkspace = useMutation(api.workspaces.update);
@@ -169,13 +171,20 @@ export function OnboardingForm({
                 <QualificationForm workspaceName={methods.getValues("workspace_name")} />
               </div>
             </div>
-            <div className="flex justify-start mt-6">
+            <div className="flex justify-between mt-6">
               <button
                 type="button"
                 className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300"
                 onClick={() => setStep(2)}
               >
                 Back
+              </button>
+              <button
+                type="button"
+                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+                onClick={() => router.push("/dashboard")}
+              >
+                Next
               </button>
             </div>
           </>

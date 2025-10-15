@@ -1,180 +1,181 @@
 "use client";
-
-import { useState } from "react";
-import { useQuery } from "convex/react";
-
-import "../globals.css";
-
-import {
-  IntegrationSnippet,
-  QualificationForm,
-  OnboardingForm,
-} from "@/components/form";
+import React, { useState } from "react";
+import { Authenticated, Unauthenticated, useQuery } from "convex/react";
+import { SignInButton } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 
-const TABS = [
-  { key: "update", label: "Update Workspace" },
-  { key: "instructions", label: "Instructions" },
+const SIDEBAR_ITEMS = [
+  { key: "summary", label: "Summary" },
+  { key: "analytics", label: "Analytics" },
+  { key: "config", label: "Config" },
+  { key: "settings", label: "Settings" },
 ];
 
-const appUrl = "https://example.com";
-
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState("update");
-  const [workspaceName, setWorkspaceName] = useState("");
-  const [workspaceNameInput, setWorkspaceNameInput] = useState("");
-  const [showWorkspaceForm, setShowWorkspaceForm] = useState(false);
-
-  // Query to get workspace data by name
-  const existingWorkspace = useQuery(
-    api.workspaces.getByName,
-    workspaceName ? { name: workspaceName } : "skip",
+  return (
+    <>
+      <Authenticated>
+        <DashboardAuthed />
+      </Authenticated>
+      <Unauthenticated>
+        <div className="min-h-screen flex items-center justify-center">
+          <SignInButton />
+        </div>
+      </Unauthenticated>
+    </>
   );
+}
 
-  const handleWorkspaceSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (workspaceNameInput.trim()) {
-      setWorkspaceName(workspaceNameInput.trim());
-      setShowWorkspaceForm(true);
-    }
-  };
+function DashboardAuthed() {
+  const [activeView, setActiveView] = useState("summary");
 
-  const handleBackToSearch = () => {
-    setShowWorkspaceForm(false);
-    setWorkspaceName("");
-    setWorkspaceNameInput("");
+  // Current user + their workspace
+  const me = useQuery(api.users.me, {});
+  const meLoading = me === undefined;
+  const workspaceName = me?.workspace?.workspace_name ?? null;
+
+  // Summary metrics
+  const summary = useQuery(
+    api.analytics.summaryForWorkspaceName,
+    workspaceName ? { workspaceName } : "skip"
+  );
+  const summaryLoading = !!workspaceName && summary === undefined;
+
+  // Insights for Analytics tab
+  const insights = useQuery(
+    api.analytics.insightsForWorkspaceName,
+    workspaceName ? { workspaceName } : "skip"
+  );
+  const insightsLoading = !!workspaceName && insights === undefined;
+
+  const submissions = summary?.submissions ?? (summaryLoading ? "…" : 0);
+  const qualified = summary?.qualified ?? (summaryLoading ? "…" : 0);
+
+  const companyName =
+    workspaceName ?? (meLoading ? "Loading…" : "No workspace");
+
+  // Helper to format funding in millions
+  const formatMillions = (num: number | null | undefined) => {
+    if (num == null) return "No data";
+    return `$${(num / 1_000_000).toFixed(0)}m`;
   };
 
   return (
-    <>
-      <div className="max-w-3xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div className="px-6 py-4 text-xl font-bold border-b border-gray-100">
+          Dashboard
         </div>
-
-        <div className="flex border-b mb-6">
-          {TABS.map((tab) => (
+        <nav className="flex-1 px-4 py-6 space-y-2">
+          {SIDEBAR_ITEMS.map((item) => (
             <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`py-2 px-4 text-sm font-semibold focus:outline-none
-                  ${
-                    activeTab === tab.key
-                      ? "border-b-2 border-blue-600 text-blue-600"
-                      : "text-gray-500"
-                  }`}
-              style={{ marginRight: 16 }}
+              key={item.key}
+              className={`w-full text-left px-4 py-2 rounded-md transition ${
+                activeView === item.key
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+              onClick={() => setActiveView(item.key)}
             >
-              {tab.label}
+              {item.label}
             </button>
           ))}
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 p-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-semibold capitalize">{activeView}</h1>
+          <div className="text-lg font-medium text-gray-700">{companyName}</div>
         </div>
 
-        {activeTab === "update" && (
-          <>
-            {!showWorkspaceForm ? (
-              <div>
-                <h1 className="text-2xl font-bold mb-6 text-gray-800">
-                  Find Workspace
-                </h1>
-                <form onSubmit={handleWorkspaceSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Workspace Name
-                    </label>
-                    <input
-                      type="text"
-                      value={workspaceNameInput}
-                      onChange={(e) => setWorkspaceNameInput(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter workspace name to load existing configuration"
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    Load Workspace
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h1 className="text-2xl font-bold text-gray-800">
-                    Workspace Configuration: {workspaceName}
-                  </h1>
-                  <button
-                    onClick={handleBackToSearch}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  >
-                    ← Back to search
-                  </button>
-                </div>
-
-                {existingWorkspace === undefined ? (
-                  <div className="flex justify-center py-8">
-                    <div className="text-gray-500">
-                      Loading workspace data...
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {existingWorkspace === null && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
-                        <p className="text-yellow-800 text-sm">
-                          Workspace &quot;{workspaceName}&quot; not found. You
-                          can create it by filling out the form below.
-                        </p>
-                      </div>
-                    )}
-                    <OnboardingForm
-                      setWorkspaceName={setWorkspaceName}
-                      initialData={existingWorkspace}
-                    />
-                  </>
-                )}
-              </div>
-            )}
-          </>
+        {activeView === "summary" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <MetricCard label="Submissions" value={submissions} />
+            <MetricCard label="Qualified Leads" value={qualified} />
+            <MetricCard
+              label={
+                summaryLoading
+                  ? "Avg. Company Size"
+                  : summary?.omissions && summary.omissions > 0
+                  ? `Avg. Company Size (${summary.omissions} omitted)`
+                  : "Avg. Company Size"
+              }
+              value={
+                summaryLoading
+                  ? "…"
+                  : summary?.avgEmployees != null
+                  ? summary.avgEmployees.toLocaleString()
+                  : "No data"
+              }
+            />
+          </div>
         )}
 
-        {activeTab === "instructions" && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
-              Instructions
-            </h2>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Example integration snippet
-                </label>
-                <IntegrationSnippet
-                  workspaceName={workspaceName}
-                  appUrl={appUrl}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Check Lead Qualification
-                </label>
-                <QualificationForm workspaceName={workspaceName} />
-              </div>
+        {activeView === "analytics" && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Analytics</h2>
+
+            {/* Insights */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2">Insights</h3>
+              <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                <li>
+                  {insightsLoading
+                    ? "Loading…"
+                    : `${insights?.qualifiedPct ?? 0}% of form fills were qualified`}
+                </li>
+                <li>
+                  {insightsLoading
+                    ? "Loading…"
+                    : insights?.avgQualifiedEmployees != null
+                    ? `Average company size of qualified lead was ${insights.avgQualifiedEmployees.toLocaleString()}`
+                    : "Average company size of qualified lead: No data"}
+                </li>
+                <li>
+                  {insightsLoading
+                    ? "Loading…"
+                    : insights?.mostCommonSector
+                    ? `Most common vertical was ${insights.mostCommonSector}`
+                    : "Most common vertical: No data"}
+                </li>
+                <li>
+                  {insightsLoading
+                    ? "Loading…"
+                    : `Average funding raised was ${formatMillions(insights?.avgFunding)}`}
+                  {insights && insights.fundingOmissions > 0
+                    ? ` (${insights.fundingOmissions} omitted)`
+                    : ""}
+                </li>
+                <li>(FAKE) Most common qualified lead role was VP eng</li>
+                <li>(FAKE) Average revenue was $8m</li>
+              </ul>
+            </div>
+
+            {/* Actions */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Actions</h3>
+              <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                <li>(FAKE) Consider changing thresholds to be lower – aim for 100% qualified</li>
+                <li>(FAKE) Consider running marketing campaign to target VP Eng</li>
+                <li>(FAKE) Consider running this Google ad</li>
+              </ul>
             </div>
           </div>
         )}
-      </div>
+      </main>
+    </div>
+  );
+}
 
-      <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded-lg shadow-md text-center">
-        <h1 className="text-2xl font-bold mb-6 text-gray-800">
-          Welcome to Tally Enricher
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Please sign in to access the dashboard and manage your workspaces.
-        </p>
-      </div>
-    </>
+
+function MetricCard({ label, value }: { label: string | number; value: string | number }) {
+  return (
+    <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+      <div className="text-3xl font-bold mb-2">{value}</div>
+      <div className="text-gray-600">{label}</div>
+    </div>
   );
 }
