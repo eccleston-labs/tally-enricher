@@ -139,10 +139,29 @@ export const createAndLink = mutation({
       success_page_url: args.success_page_url ?? "",
       criteria: args.criteria ?? {},
     });
-    
+
     // Link workspace to the user
     await ctx.db.patch(user._id, { workspaceId });
 
     return workspaceId;
   },
 });
+
+export const setSlackToken = mutation({
+  args: {
+    workspace_name: v.string(),
+    slack_access_token: v.string(),
+  },
+  handler: async (ctx, { workspace_name, slack_access_token }) => {
+    const ws = await ctx.db
+      .query("Workspaces")
+      .withIndex("by_name", (q) => q.eq("workspace_name", workspace_name))
+      .unique();
+
+    if (!ws) throw new Error(`Workspace "${workspace_name}" not found`);
+
+    await ctx.db.patch(ws._id, { slack_access_token });
+    return ws._id;
+  },
+});
+

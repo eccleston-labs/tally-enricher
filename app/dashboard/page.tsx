@@ -18,12 +18,23 @@ const SIDEBAR_ITEMS = [
   { key: "settings", label: "Settings" },
 ];
 
+const SLACK_CLIENT_ID = process.env.NEXT_PUBLIC_SLACK_CLIENT_ID!;
+const SLACK_REDIRECT_URI = process.env.NEXT_PUBLIC_SLACK_REDIRECT_URI!;
+
 export default function DashboardPage() {
   const me = useQuery(api.users.me, {});
   const router = useRouter();
   const [activeView, setActiveView] = useState("instructions");
 
   const workspaceName = me?.workspace?.workspace_name;
+
+  // For slack Oauth
+  let slackAuthorizeUrl: string | undefined;
+  if (typeof workspaceName === "string") {
+    slackAuthorizeUrl = `https://slack.com/oauth/v2/authorize?client_id=${SLACK_CLIENT_ID}&scope=chat:write,channels:read&redirect_uri=${encodeURIComponent(
+      SLACK_REDIRECT_URI
+    )}&state=${encodeURIComponent(workspaceName)}`;
+  }
 
   // Always call queries, use "skip" if not ready
   const summary = useQuery(
@@ -120,11 +131,13 @@ export default function DashboardPage() {
 
             <div className="bg-white rounded-lg shadow p-6 space-y-8">
               <h2 className="text-xl font-semibold mb-4">Slack (Optional)</h2>
-              <a href={slackAuthorizeUrl}>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded">
-                  Connect Slack
-                </button>
-              </a>
+              {slackAuthorizeUrl && (
+                <a href={slackAuthorizeUrl}>
+                  <button className="bg-blue-600 text-white px-4 py-2 rounded">
+                    Connect Slack
+                  </button>
+                </a>
+              )}
 
               {/* Channel selection UI */}
               <SlackChannelSelector />
