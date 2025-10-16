@@ -4,7 +4,6 @@
 GABE TO DO:
 - Analytics and Workspaces currently soft linked by workspace_name string, can move to ids for relational integrity. (maybe)
 - Figure out our website domain
-move landing page and redirect to landing page -remove fake data
 - slack messaging endpoint and logs
 - basic research and endpoint
 - sign up from call in landing page
@@ -12,4 +11,4 @@ move landing page and redirect to landing page -remove fake data
 
 
 
-?email=gabe@microsoft.com&workspace_name=GabeTest
+?email=gabe@microsoft.com&workspace_name=GabeTests

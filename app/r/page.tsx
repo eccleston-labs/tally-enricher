@@ -12,13 +12,16 @@ import {
 const GRANOLA_SLACK_URL =
   "https://hooks.slack.com/services/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";
 
+// 🔔 New workflow trigger webhook (Slack Workflow Builder)
+const SLACK_TRIGGER_URL =
+  "https://hooks.slack.com/triggers/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";
+
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const startTime = performance.now();
-
   const params = await searchParams;
 
   const email = params.email as string;
@@ -29,16 +32,11 @@ export default async function HomePage({
       if (workspaceName === "granola") {
         await fetch(GRANOLA_SLACK_URL, {
           method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            error: "Missing email or workspace_name parameter",
-          }),
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ error: "Missing email or workspace_name parameter" }),
         });
       }
     }
-    // fallback redirect if no workspace info available
     redirect("https://example.com/error");
   }
 
@@ -50,12 +48,8 @@ export default async function HomePage({
       if (workspaceName === "granola") {
         await fetch(GRANOLA_SLACK_URL, {
           method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            error: "Invalid email format",
-          }),
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ error: "Invalid email format" }),
         });
       }
     }
@@ -73,12 +67,8 @@ export default async function HomePage({
       if (workspaceName === "granola") {
         await fetch(GRANOLA_SLACK_URL, {
           method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            error: "Workspace not found",
-          }),
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ error: "Workspace not found" }),
         });
       }
     }
@@ -100,9 +90,7 @@ export default async function HomePage({
     if (workspaceName === "granola") {
       await fetch(GRANOLA_SLACK_URL, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ text: fieldsStr }),
       });
     }
@@ -115,26 +103,35 @@ export default async function HomePage({
     workspaceName,
     qualified,
     ts: Date.now(),
-
     employees: enrichmentData.employees ?? undefined,
     funding: enrichmentData.funding ?? undefined,
     sector: enrichmentData.sector ?? undefined,
     size: enrichmentData.size ?? undefined,
-  }).catch(() => { });
+  }).catch(() => {});
 
-  // func for dev when url is localhost (http)
   function normalizeUrl(url: string | undefined, fallback: string) {
     if (!url) return fallback;
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
     return `https://${url}`;
   }
 
-  // ✅ dynamic redirects
   const successUrl = normalizeUrl(workspace.booking_url, "https://example.com/success");
   const disqualifyUrl = normalizeUrl(workspace.success_page_url, "https://example.com/disqualify");
 
+  // 🔔 NEW: Always send Slack trigger message when qualified
   if (qualified.result) {
+    // if (process.env.NODE_ENV !== "development") {
+      await fetch(SLACK_TRIGGER_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          message: `${enrichmentData.name} was just qualified 🎉`,
+        }),
+      }).catch(() => {});
+    // }
+
     redirect(successUrl);
   }
+
   redirect(disqualifyUrl);
 }
