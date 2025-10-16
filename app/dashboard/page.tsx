@@ -244,8 +244,14 @@ function MetricCard({
   );
 }
 
+interface SlackChannel {
+  id: string;
+  name: string;
+  [key: string]: unknown; // optional, lets you ignore other fields
+}
+
 function SlackChannelSelector() {
-  const [channels, setChannels] = useState<any[]>([]);
+  const [channels, setChannels] = useState<SlackChannel[]>([]);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -254,7 +260,7 @@ function SlackChannelSelector() {
       setLoading(true);
       const res = await fetch("/api/slack/channels");
       const data = await res.json();
-      if (data.channels) setChannels(data.channels);
+      if (data.channels) setChannels(data.channels as SlackChannel[]);
       setLoading(false);
     };
     fetchChannels();
@@ -276,7 +282,7 @@ function SlackChannelSelector() {
     <div>
       <h3 className="text-lg font-semibold mb-2">Select Channel</h3>
       <ul className="space-y-2">
-        {channels.map((c: any) => (
+        {channels.map((c) => (
           <li key={c.id}>
             <button
               className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
@@ -291,4 +297,3 @@ function SlackChannelSelector() {
     </div>
   );
 }
-
