@@ -13,8 +13,11 @@ export default defineSchema({
       min_funding_usd: v.optional(v.number()),
       min_revenue_usd: v.optional(v.number()),
     }),
+    slack_access_token: v.optional(v.string()),   // slack
+    slack_channel_id: v.optional(v.string()),     
   })
     .index("by_name", ["workspace_name"]),
+
 
   Analytics: defineTable({
     event: v.string(),
