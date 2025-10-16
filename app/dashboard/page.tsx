@@ -8,6 +8,7 @@ import { ConfigForm } from "@/components/ConfigForm";
 import { IntegrationSnippet } from "@/components/form/integration-snippet";
 import { SignOutButton } from "@clerk/nextjs";
 import { QualificationForm } from "@/components/form/qualification-form";
+import { slackAuthorizeUrl } from "@/lib/slack";
 
 const SIDEBAR_ITEMS = [
   { key: "instructions", label: "Instructions" },
@@ -101,20 +102,28 @@ export default function DashboardPage() {
         </div>
 
         {activeView === "instructions" && (
-          <div className="bg-white rounded-lg shadow p-6 space-y-8">
-            <h2 className="text-xl font-semibold mb-4">Setup Instructions</h2>
-            <p className="text-gray-600">
-              Use the snippet below to connect your form provider. Then test lead qualification.
-            </p>
-            <IntegrationSnippet
-              workspaceName={me.workspace.workspace_name}
-              appUrl="https://tally-enricher.vercel.app"
-            />
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Test Qualification</h3>
-              <QualificationForm workspaceName={me.workspace.workspace_name} />
+          <>
+            <div className="bg-white rounded-lg shadow p-6 space-y-8">
+              <h2 className="text-xl font-semibold mb-4">Setup Instructions</h2>
+              <p className="text-gray-600">
+                Use the snippet below to connect your form provider. Then test lead qualification.
+              </p>
+              <IntegrationSnippet
+                workspaceName={me.workspace.workspace_name}
+                appUrl="https://tally-enricher.vercel.app"
+              />
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Test Qualification</h3>
+                <QualificationForm workspaceName={me.workspace.workspace_name} />
+              </div>
             </div>
-          </div>
+            <div className="bg-white rounded-lg shadow p-6 space-y-8">
+              <h2 className="text-xl font-semibold mb-4">Slack (Optional)</h2>
+              <a href={slackAuthorizeUrl}>
+                <button>Connect Slack</button>
+              </a>
+            </div>
+          </>
         )}
 
 
@@ -169,21 +178,18 @@ export default function DashboardPage() {
                     : "Loading…"}
                 </li>
 
-                {/* FAKE insights */}
-                <li>(FAKE) Most common qualified lead role was VP Eng</li>
-                <li>(FAKE) Average revenue was $8m</li>
               </ul>
             </div>
 
             {/* Actions */}
-            <div>
+            {/* <div>
               <h3 className="text-lg font-semibold mb-2">Actions</h3>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>(FAKE) Consider changing thresholds to be lower – aim for 100% qualified</li>
                 <li>(FAKE) Consider running marketing campaign to target VP Eng</li>
                 <li>(FAKE) Consider running this Google ad</li>
               </ul>
-            </div>
+            </div> */}
           </div>
         )}
 

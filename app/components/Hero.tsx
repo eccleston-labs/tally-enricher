@@ -1,4 +1,4 @@
-import { PreviewCard } from "@/app/tester/components/PreviewCard";
+import { PreviewCard } from "@/app/components/PreviewCard";
 
 export function Hero() {
   return (
