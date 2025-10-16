@@ -117,15 +117,20 @@ export default function DashboardPage() {
                 <QualificationForm workspaceName={me.workspace.workspace_name} />
               </div>
             </div>
+
             <div className="bg-white rounded-lg shadow p-6 space-y-8">
               <h2 className="text-xl font-semibold mb-4">Slack (Optional)</h2>
               <a href={slackAuthorizeUrl}>
-                <button>Connect Slack</button>
+                <button className="bg-blue-600 text-white px-4 py-2 rounded">
+                  Connect Slack
+                </button>
               </a>
+
+              {/* Channel selection UI */}
+              <SlackChannelSelector />
             </div>
           </>
         )}
-
 
         {activeView === "summary" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -235,6 +240,60 @@ function MetricCard({
     <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
       <div className="text-3xl font-bold mb-2">{value}</div>
       <div className="text-gray-600">{label}</div>
+    </div>
+  );
+}
+
+interface SlackChannel {
+  id: string;
+  name: string;
+  [key: string]: unknown; // optional, lets you ignore other fields
+}
+
+function SlackChannelSelector() {
+  const [channels, setChannels] = useState<SlackChannel[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const fetchChannels = async () => {
+      setLoading(true);
+      const res = await fetch("/api/slack/channels");
+      const data = await res.json();
+      if (data.channels) setChannels(data.channels as SlackChannel[]);
+      setLoading(false);
+    };
+    fetchChannels();
+  }, []);
+
+  const saveChannel = async (channelId: string) => {
+    await fetch("/api/slack/save-channel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channelId }),
+    });
+    setSaved(true);
+  };
+
+  if (loading) return <p>Loading channels…</p>;
+  if (channels.length === 0) return <p>No channels found</p>;
+
+  return (
+    <div>
+      <h3 className="text-lg font-semibold mb-2">Select Channel</h3>
+      <ul className="space-y-2">
+        {channels.map((c) => (
+          <li key={c.id}>
+            <button
+              className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
+              onClick={() => saveChannel(c.id)}
+            >
+              #{c.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {saved && <p className="text-green-600 mt-2">Channel saved ✅</p>}
     </div>
   );
 }

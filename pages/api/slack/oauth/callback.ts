@@ -22,5 +22,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Save access_token + team info in DB
-  res.redirect("/settings/slack/select-channel");
+  res.redirect("/dashboard");
 }
