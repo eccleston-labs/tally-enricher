@@ -11,6 +11,7 @@ import { QualificationForm } from "@/components/form/qualification-form";
 import Sidebar from "@/app/components/dashboard/Sidebar";
 import SlackChannelSelector from "@/app/components/dashboard/SlackChannelSelector";
 import Analytics from "@/app/components/dashboard/Analytics";
+import RecentQualifiedLeads from "@/app/components/dashboard/RecentQualifiedLeads";
 
 const SIDEBAR_ITEMS = [
   { key: "instructions", label: "Instructions" },
@@ -48,6 +49,11 @@ export default function DashboardPage() {
     workspaceName ? { workspaceName } : "skip"
   );
 
+  const recentLeads = useQuery(
+    api.analytics.recentQualifiedLeads,
+    workspaceName ? { workspaceName, limit: 5 } : ("skip" as const)
+  );
+
   // Redirect effects run AFTER hooks are called
   useEffect(() => {
     if (me === null) {
@@ -67,6 +73,8 @@ export default function DashboardPage() {
 
   const submissions = summary?.submissions ?? 0;
   const qualified = summary?.qualified ?? 0;
+
+  
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -119,22 +127,26 @@ export default function DashboardPage() {
         )}
 
         {activeView === "summary" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <MetricCard label="Submissions" value={submissions} />
-            <MetricCard label="Qualified Leads" value={qualified} />
-            <MetricCard
-              label={
-                summary?.omissions && summary.omissions > 0
-                  ? `Avg. Company Size (${summary.omissions} omitted)`
-                  : "Avg. Company Size"
-              }
-              value={
-                summary?.avgEmployees != null
-                  ? summary.avgEmployees.toLocaleString()
-                  : "No data"
-              }
-            />
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <MetricCard label="Submissions" value={submissions} />
+              <MetricCard label="Qualified Leads" value={qualified} />
+              <MetricCard
+                label={
+                  summary?.omissions && summary.omissions > 0
+                    ? `Avg. Company Size (${summary.omissions} omitted)`
+                    : "Avg. Company Size"
+                }
+                value={
+                  summary?.avgEmployees != null
+                    ? summary.avgEmployees.toLocaleString()
+                    : "No data"
+                }
+              />
+            </div>
+
+            <RecentQualifiedLeads leads={recentLeads ?? []} />
+          </>
         )}
 
         {activeView === "analytics" && (

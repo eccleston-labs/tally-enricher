@@ -141,3 +141,28 @@ export const insightsForWorkspaceName = query({
     };
   },
 });
+
+// Recent qualified leads
+export const recentQualifiedLeads = query({
+  args: { workspaceName: v.string(), limit: v.optional(v.number()) },
+  handler: async (ctx, { workspaceName, limit = 5 }) => {
+    const analytics = await ctx.db
+      .query("Analytics")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("workspaceName"), workspaceName),
+          q.eq(q.field("qualified.result"), true)
+        )
+      )
+      .order("desc") // newest first
+      .take(limit);
+
+    return analytics.map((a) => ({
+      companyName: a.companyName ?? "Unknown",
+      domain: a.domain,
+      size: a.size ?? null,
+      sector: a.sector ?? null,
+      createdAt: new Date(a._creationTime).toISOString(),
+    }));
+  },
+});

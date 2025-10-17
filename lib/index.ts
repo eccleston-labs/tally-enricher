@@ -128,7 +128,6 @@ export async function enrichPerson(
     // Extract
     const enriched = {
       jobTitle: data?.data?.job_title ?? null,
-      company: data?.data?.job_company_name ?? null,
       location: data?.data?.job_company_location_name ?? null,
       linkedinUrl: data?.data?.linkedin_url ?? null,
     };

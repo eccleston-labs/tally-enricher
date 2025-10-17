@@ -8,7 +8,7 @@ GABE TO DO:
 
 http://localhost:3000/r?email=jensen@nvidia.com&workspace_name=GabeTests&first_name=Jensen&last_name=Huang
 
-http://localhost:3000/r?email=marisa@attio.com&workspace_name=GabeTests&first_name=Marisa&last_name=McGill
+http://localhost:3000/r?email=marisa@whatsapp.com&workspace_name=GabeTests
 
 curl -X POST "https://api.peopledatalabs.com/v5/person/enrich" \
   -H "Content-Type: application/json" \
