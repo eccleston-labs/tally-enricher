@@ -14,7 +14,7 @@ export default defineSchema({
       min_revenue_usd: v.optional(v.number()),
     }),
     slack_access_token: v.optional(v.string()),   // slack
-    slack_channel_id: v.optional(v.string()),     
+    slack_channel_id: v.optional(v.string()),
   })
     .index("by_name", ["workspace_name"]),
 
@@ -34,6 +34,15 @@ export default defineSchema({
     funding: v.optional(v.number()),
     sector: v.optional(v.string()),
     size: v.optional(v.string()),
+
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    linkedin: v.optional(v.string()),
+
+    jobTitle: v.optional(v.string()),
+    companyName: v.optional(v.string()),
+    location: v.optional(v.string()),
+    // revenue: v.optional(v.number()),
   })
     .index("by_workspaceName", ["workspaceName"]),
 

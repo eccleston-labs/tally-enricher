@@ -3,6 +3,7 @@ import { Redis } from "@upstash/redis";
 
 import {
   EnrichmentData,
+  PersonData,
   QualificationResult,
   WorkspaceCriteria,
 } from "@/types";
@@ -73,7 +74,7 @@ export async function enrichDomain(
         .join(", ") || null,
       // revenue: data?.annual_revenue ?? null,
     };
-    console.log(`PDL enrichment for ${domain}:`, enriched);
+    // console.log(`PDL enrichment for ${domain}:`, enriched);
     await redis.set(cacheKey, JSON.stringify(enriched), { ex: expiry });
     return enriched;
   } catch (err) {
@@ -87,6 +88,61 @@ export async function enrichDomain(
     };
   }
 }
+
+export async function enrichPerson(
+  firstName: string,
+  lastName: string,
+  domain: string,
+  expiry = 604800,
+) {
+  if (!process.env.PDL_API_KEY) throw new Error("Missing PDL_API_KEY");
+
+  const cacheKey = `enrichment:person:${firstName}:${lastName}:${domain}`;
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    return cached as PersonData;
+  }
+
+  try {
+    const response = await fetch("https://api.peopledatalabs.com/v5/person/enrich", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Api-Key": process.env.PDL_API_KEY,
+      },
+      body: JSON.stringify({
+        first_name: firstName,
+        last_name: lastName,
+        company: domain,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to fetch person from PDL");
+      return null;
+    }
+
+    const data = await response.json();
+    // console.log("PDL person API response:", data);
+
+    // Extract
+    const enriched = {
+      jobTitle: data?.data?.job_title ?? null,
+      company: data?.data?.job_company_name ?? null,
+      location: data?.data?.job_company_location_name ?? null,
+      linkedinUrl: data?.data?.linkedin_url ?? null,
+    };
+
+    console.log(enriched)
+
+    await redis.set(cacheKey, JSON.stringify(enriched), { ex: expiry });
+    return enriched;
+  } catch (err) {
+    console.error("PDL person enrichment error:", err);
+    return null;
+  }
+}
+
 
 export function qualifyLead(
   enrichmentData: EnrichmentData,

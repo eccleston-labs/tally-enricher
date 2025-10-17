@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import {
     enrichDomain,
+    enrichPerson,
     extractDomainFromEmail,
     qualifyLead,
     getWorkspaceWithCache,
@@ -26,6 +27,9 @@ export default async function HomePage({
 
     const email = params.email as string;
     const workspaceName = params.workspace_name as string;
+
+    const firstName = (params.first_name as string | undefined) ?? undefined;
+    const lastName = (params.last_name as string | undefined) ?? undefined;
 
     if (!email || !workspaceName) {
         if (process.env.NODE_ENV !== "development") {
@@ -57,9 +61,12 @@ export default async function HomePage({
     }
 
     // Profile parallel API calls
-    const [workspace, enrichmentData] = await Promise.all([
+    const [workspace, enrichmentData, personData] = await Promise.all([
         getWorkspaceWithCache(workspaceName),
         enrichDomain(domain),
+        firstName && lastName // only enrich person if both names are provided
+            ? enrichPerson(firstName, lastName, domain)
+            : Promise.resolve(null),
     ]);
 
     if (!workspace) {
@@ -83,6 +90,9 @@ export default async function HomePage({
         workspace,
         enrichmentData,
         qualified,
+        firstName,
+        lastName,
+        personData,
     });
 
     // Non-blocking analytics: don't await!
@@ -107,7 +117,14 @@ export default async function HomePage({
         funding: enrichmentData.funding ?? undefined,
         sector: enrichmentData.sector ?? undefined,
         size: enrichmentData.size ?? undefined,
+        firstName,
+        lastName,
+        linkedin: personData?.linkedinUrl ?? undefined,
+        jobTitle: personData?.jobTitle ?? undefined,
+        companyName: personData?.company ?? undefined,
+        location: personData?.location ?? undefined,
     }).catch(() => { });
+
 
     function normalizeUrl(url: string | undefined, fallback: string) {
         if (!url) return fallback;
@@ -119,6 +136,7 @@ export default async function HomePage({
     const disqualifyUrl = normalizeUrl(workspace.success_page_url, "https://example.com/disqualify");
 
     if (qualified.result) {
+        console.log(enrichmentData);
         try {
             // 🔐 Securely fetch Slack secrets server-side
             const tokenResult = await fetchQuery(api.workspaces.getSlackToken, {
@@ -143,9 +161,15 @@ export default async function HomePage({
                 });
 
                 const joinData = await joinResp.json();
-                console.log("Slack join response:", joinData);
+                // console.log("Slack join response:", joinData);
 
-                // Send the message
+                // capitalise
+                const companyName =
+                    enrichmentData.name && enrichmentData.name.length > 0
+                        ? enrichmentData.name.charAt(0).toUpperCase() + enrichmentData.name.slice(1)
+                        : "Unknown";
+
+                // Send the formatted message
                 const postResp = await fetch("https://slack.com/api/chat.postMessage", {
                     method: "POST",
                     headers: {
@@ -154,12 +178,13 @@ export default async function HomePage({
                     },
                     body: JSON.stringify({
                         channel: channelId,
-                        text: `${enrichmentData.name} was just qualified 🎉`,
+                        text: `${companyName} (${domain}) was qualified!${personData?.jobTitle ? ` – ${firstName} ${lastName}, ${personData.jobTitle}, ${personData.linkedinUrl}` : ""
+                            }`,
                     }),
                 });
 
                 const postData = await postResp.json();
-                console.log("Slack postMessage response:", postData);
+                // console.log("Slack postMessage response:", postData);
 
                 if (!postData.ok) {
                     console.error("Slack API error:", postData.error);
@@ -173,6 +198,7 @@ export default async function HomePage({
 
         redirect(successUrl);
     }
+
 
 
     redirect(disqualifyUrl);
