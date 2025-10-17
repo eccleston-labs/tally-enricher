@@ -61,7 +61,7 @@ export async function enrichDomain(
     }
 
     const data = await response.json();
-    // console.log("PDL API response:", data);
+    console.log("PDL API response:", data);
 
     const enriched = {
       name: data?.display_name ?? data?.name ?? null,

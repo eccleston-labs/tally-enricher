@@ -9,6 +9,9 @@ GABE TO DO:
 - sign up from call in landing page
 - add revenue
 
-
+- research into the person
+- more slack messages based off linkedin research
 
 ?email=gabe@microsoft.com&workspace_name=GabeTests
+
+Pass the name

@@ -119,6 +119,7 @@ export default async function HomePage({
     const disqualifyUrl = normalizeUrl(workspace.success_page_url, "https://example.com/disqualify");
 
     if (qualified.result) {
+        console.log(enrichmentData);
         try {
             // 🔐 Securely fetch Slack secrets server-side
             const tokenResult = await fetchQuery(api.workspaces.getSlackToken, {
@@ -143,9 +144,15 @@ export default async function HomePage({
                 });
 
                 const joinData = await joinResp.json();
-                console.log("Slack join response:", joinData);
+                // console.log("Slack join response:", joinData);
 
-                // Send the message
+                // capitalise
+                const companyName =
+                    enrichmentData.name && enrichmentData.name.length > 0
+                        ? enrichmentData.name.charAt(0).toUpperCase() + enrichmentData.name.slice(1)
+                        : "Unknown";
+
+                // Send the formatted message
                 const postResp = await fetch("https://slack.com/api/chat.postMessage", {
                     method: "POST",
                     headers: {
@@ -154,12 +161,12 @@ export default async function HomePage({
                     },
                     body: JSON.stringify({
                         channel: channelId,
-                        text: `${enrichmentData.name} was just qualified 🎉`,
+                        text: `${companyName} (${domain}) was qualified!`,
                     }),
                 });
 
                 const postData = await postResp.json();
-                console.log("Slack postMessage response:", postData);
+                // console.log("Slack postMessage response:", postData);
 
                 if (!postData.ok) {
                     console.error("Slack API error:", postData.error);
@@ -173,6 +180,7 @@ export default async function HomePage({
 
         redirect(successUrl);
     }
+
 
 
     redirect(disqualifyUrl);
