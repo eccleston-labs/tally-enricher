@@ -6,7 +6,16 @@ export const get = query({
   args: {},
   handler: async (ctx) => {
     const workspaces = await ctx.db.query("Workspaces").collect();
-    return workspaces;
+    return workspaces.map((w) => ({
+      _id: w._id,
+      workspace_name: w.workspace_name,
+      form_provider: w.form_provider,
+      booking_url: w.booking_url,
+      success_page_url: w.success_page_url,
+      criteria: w.criteria,
+      _creationTime: w._creationTime,
+      // ⚠️ no slack_access_token, no slack_channel_id
+    }));
   },
 });
 
@@ -17,9 +26,22 @@ export const getByName = query({
       .query("Workspaces")
       .filter((q) => q.eq(q.field("workspace_name"), name))
       .first();
-    return workspace;
+
+    if (!workspace) return null;
+
+    return {
+      _id: workspace._id,
+      workspace_name: workspace.workspace_name,
+      form_provider: workspace.form_provider,
+      booking_url: workspace.booking_url,
+      success_page_url: workspace.success_page_url,
+      criteria: workspace.criteria,
+      _creationTime: workspace._creationTime,
+      // ⚠️ sensitive fields deliberately omitted
+    };
   },
 });
+
 
 // --- Mutations ---
 export const update = mutation({
@@ -162,6 +184,70 @@ export const setSlackToken = mutation({
 
     await ctx.db.patch(ws._id, { slack_access_token });
     return ws._id;
+  },
+});
+
+// dont expose this to frontend
+export const getSlackToken = query({
+  args: { name: v.string() },
+  handler: async (ctx, { name }) => {
+    const ws = await ctx.db
+      .query("Workspaces")
+      .withIndex("by_name", (q) => q.eq("workspace_name", name))
+      .unique();
+
+    if (!ws) return null;
+
+    return {
+      slack_access_token: ws.slack_access_token ?? null,
+    };
+  },
+});
+
+export const setSlackChannel = mutation({
+  args: {
+    workspace_name: v.string(),
+    slack_channel_id: v.string(),
+  },
+  handler: async (ctx, { workspace_name, slack_channel_id }) => {
+    const ws = await ctx.db
+      .query("Workspaces")
+      .withIndex("by_name", (q) => q.eq("workspace_name", workspace_name))
+      .unique();
+
+    if (!ws) {
+      throw new Error(`Workspace "${workspace_name}" not found`);
+    }
+
+    await ctx.db.patch(ws._id, { slack_channel_id });
+    return ws._id;
+  },
+});
+
+// for frontend render
+export const getSlackChannel = query({
+  args: { workspace_name: v.string() },
+  handler: async (ctx, { workspace_name }) => {
+    const ws = await ctx.db
+      .query("Workspaces")
+      .withIndex("by_name", (q) => q.eq("workspace_name", workspace_name))
+      .unique();
+
+    if (!ws) return null;
+    return ws.slack_channel_id ?? null;
+  },
+});
+
+// convex/workspaces.ts
+export const isSlackConnected = query({
+  args: { workspace_name: v.string() },
+  handler: async (ctx, { workspace_name }) => {
+    const ws = await ctx.db
+      .query("Workspaces")
+      .withIndex("by_name", (q) => q.eq("workspace_name", workspace_name))
+      .unique();
+    if (!ws) return false;
+    return !!ws.slack_access_token; // safe boolean
   },
 });
 

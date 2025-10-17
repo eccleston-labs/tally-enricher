@@ -72,11 +72,28 @@ export const me = query({
       .unique();
 
     if (!user) return null;
+
     const workspace = user.workspaceId ? await ctx.db.get(user.workspaceId) : null;
 
-    return { user, workspace };
+    return {
+      user,
+      workspace: workspace
+        ? {
+            // spread only non-sensitive fields
+            _id: workspace._id,
+            workspace_name: workspace.workspace_name,
+            form_provider: workspace.form_provider,
+            booking_url: workspace.booking_url,
+            success_page_url: workspace.success_page_url,
+            criteria: workspace.criteria,
+            _creationTime: workspace._creationTime,
+            // omit slack_access_token and slack_channel_id
+          }
+        : null,
+    };
   },
 });
+
 
 /** Admin: link a specific user to a specific workspace by IDs. */
 export const linkUserToWorkspace = mutation({
