@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ConfigForm } from "@/components/ConfigForm";
 import { IntegrationSnippet } from "@/components/form/integration-snippet";
-import { SignOutButton } from "@clerk/nextjs";
 import { QualificationForm } from "@/components/form/qualification-form";
+
+import Sidebar from "@/app/components/dashboard/Sidebar";
+import SlackChannelSelector from "@/app/components/dashboard/SlackChannelSelector";
+import Analytics from "@/app/components/dashboard/Analytics";
 
 const SIDEBAR_ITEMS = [
   { key: "instructions", label: "Instructions" },
@@ -65,42 +68,14 @@ export default function DashboardPage() {
   const submissions = summary?.submissions ?? 0;
   const qualified = summary?.qualified ?? 0;
 
-  const formatMillions = (num: number | null | undefined) => {
-    if (num == null) return "No data";
-    return `$${(num / 1_000_000).toFixed(0)}m`;
-  };
-
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="px-6 py-4 text-xl font-bold border-b border-gray-100">
-          Dashboard
-        </div>
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {SIDEBAR_ITEMS.map((item) => (
-            <button
-              key={item.key}
-              className={`w-full text-left px-4 py-2 rounded-md transition ${activeView === item.key
-                ? "bg-blue-600 text-white"
-                : "text-gray-700 hover:bg-gray-100"
-                }`}
-              onClick={() => setActiveView(item.key)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Logout button at bottom */}
-        <div className="px-4 py-6 border-t border-gray-200">
-          <SignOutButton redirectUrl="/home">
-            <button className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-md transition">
-              Logout
-            </button>
-          </SignOutButton>
-        </div>
-      </aside>
+      <Sidebar
+        items={SIDEBAR_ITEMS}
+        activeView={activeView}
+        setActiveView={setActiveView}
+      />
 
       {/* Main Content */}
       <main className="flex-1 p-8">
@@ -163,50 +138,7 @@ export default function DashboardPage() {
         )}
 
         {activeView === "analytics" && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Analytics</h2>
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Insights</h3>
-              <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                <li>
-                  {insights
-                    ? `${insights.qualifiedPct}% of form fills were qualified`
-                    : "Loading…"}
-                </li>
-                <li>
-                  {insights?.avgQualifiedEmployees
-                    ? `Average company size of qualified lead was ${insights.avgQualifiedEmployees.toLocaleString()}`
-                    : "Average company size of qualified lead: No data"}
-                </li>
-                <li>
-                  {insights?.mostCommonSector
-                    ? `Most common vertical was ${insights.mostCommonSector}`
-                    : "Most common vertical: No data"}
-                </li>
-                <li>
-                  {insights
-                    ? `Average funding raised was ${formatMillions(
-                      insights.avgFunding
-                    )}${insights.fundingOmissions > 0
-                      ? ` (${insights.fundingOmissions} omitted)`
-                      : ""
-                    }`
-                    : "Loading…"}
-                </li>
-
-              </ul>
-            </div>
-
-            {/* Actions */}
-            {/* <div>
-              <h3 className="text-lg font-semibold mb-2">Actions</h3>
-              <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                <li>(FAKE) Consider changing thresholds to be lower – aim for 100% qualified</li>
-                <li>(FAKE) Consider running marketing campaign to target VP Eng</li>
-                <li>(FAKE) Consider running this Google ad</li>
-              </ul>
-            </div> */}
-          </div>
+          <Analytics insights={insights} />
         )}
 
         {activeView === "config" && (
@@ -255,89 +187,3 @@ function MetricCard({
   );
 }
 
-interface SlackChannel {
-  id: string;
-  name: string;
-  [key: string]: unknown;
-}
-
-interface SlackChannelSelectorProps {
-  workspaceName: string;
-  slackAuthorizeUrl?: string;
-}
-
-function SlackChannelSelector({ workspaceName, slackAuthorizeUrl }: SlackChannelSelectorProps) {
-  const [channels, setChannels] = useState<SlackChannel[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [savedChannelId, setSavedChannelId] = useState<string | null>(null);
-  const [connected, setConnected] = useState<boolean>(false);
-
-  useEffect(() => {
-    const fetchChannels = async () => {
-      setLoading(true);
-      const res = await fetch(`/api/slack/channels?workspaceName=${encodeURIComponent(workspaceName)}`);
-      const data = await res.json();
-
-      setConnected(data.connected ?? false);
-      if (data.channels) setChannels(data.channels as SlackChannel[]);
-      if (data.savedChannelId) setSavedChannelId(data.savedChannelId);
-
-      setLoading(false);
-    };
-    fetchChannels();
-  }, [workspaceName]);
-
-  const saveChannel = async (channelId: string) => {
-    await fetch("/api/slack/save-channel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelId, workspaceName }),
-    });
-    setSavedChannelId(channelId);
-  };
-
-  if (loading) return <p>Loading channels…</p>;
-
-  if (!connected) {
-    return slackAuthorizeUrl ? (
-      <a href={slackAuthorizeUrl}>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">
-          Connect Slack
-        </button>
-      </a>
-    ) : (
-      <p className="text-gray-500">No Slack connection available</p>
-    );
-  }
-
-  return (
-    <div>
-      <h3 className="text-lg font-semibold mb-2">Select Channel</h3>
-      <ul className="flex flex-wrap justify-center gap-4 w-full">
-        {channels.map((c) => (
-          <li key={c.id} className="flex-1 min-w-[120px]">
-            <button
-              className={`w-full px-3 py-2 rounded text-center transition ${
-                c.id === savedChannelId
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 hover:bg-gray-200"
-              }`}
-              onClick={() => saveChannel(c.id)}
-            >
-              #{c.name}
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {savedChannelId && (
-        <p className="text-gray-700 mt-4 text-center">
-          Saved channel:{" "}
-          <span className="font-semibold">
-            #{channels.find((c) => c.id === savedChannelId)?.name ?? "unknown"}
-          </span>
-        </p>
-      )}
-    </div>
-  );
-}
