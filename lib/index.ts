@@ -3,6 +3,7 @@ import { Redis } from "@upstash/redis";
 
 import {
   EnrichmentData,
+  PersonData,
   QualificationResult,
   WorkspaceCriteria,
 } from "@/types";
@@ -99,7 +100,7 @@ export async function enrichPerson(
   const cacheKey = `enrichment:person:${firstName}:${lastName}:${domain}`;
   const cached = await redis.get(cacheKey);
   if (cached) {
-    return cached as any;
+    return cached as PersonData;
   }
 
   try {

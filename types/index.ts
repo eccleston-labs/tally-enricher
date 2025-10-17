@@ -16,3 +16,10 @@ export interface QualificationResult {
   result: boolean;
   reason: string;
 }
+
+export interface PersonData {
+  jobTitle: string | null;
+  company: string | null;
+  location: string | null;
+  linkedinUrl: string | null;
+}
