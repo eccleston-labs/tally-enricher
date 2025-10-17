@@ -12,6 +12,11 @@ GABE TO DO:
 - research into the person
 - more slack messages based off linkedin research
 
-?email=gabe@microsoft.com&workspace_name=GabeTests
+- grab first and lastr name from form as optional
+- use in pdl enrichment (another request) parallel with company enrich
 
-Pass the name
+- hit linkedin api
+
+http://localhost:3000/r?email=jensen@nvidia.com&workspace_name=GabeTests&first_name=Jensen&last_name=Huang
+
+http://localhost:3000/r?email=marisa@attio.com&workspace_name=GabeTests&first_name=Marisa&last_name=McGill
