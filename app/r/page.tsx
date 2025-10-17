@@ -121,7 +121,7 @@ export default async function HomePage({
         lastName,
         linkedin: personData?.linkedinUrl ?? undefined,
         jobTitle: personData?.jobTitle ?? undefined,
-        companyName: personData?.company ?? undefined,
+        companyName: enrichmentData.name ?? undefined,
         location: personData?.location ?? undefined,
     }).catch(() => { });
 

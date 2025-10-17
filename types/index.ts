@@ -19,7 +19,6 @@ export interface QualificationResult {
 
 export interface PersonData {
   jobTitle: string | null;
-  company: string | null;
   location: string | null;
   linkedinUrl: string | null;
 }
